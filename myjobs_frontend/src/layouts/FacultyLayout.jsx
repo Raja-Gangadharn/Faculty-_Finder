@@ -9,6 +9,7 @@ import Breadcrumbs from '../components/faculty/Breadcrumbs';
 import Footer from '../components/faculty/Footer';
 import '../assets/faculty/faculty-scoped.css';
 import Tutorial from '../components/faculty/Tutorial';
+import '../assets/faculty/faculty-global.css';
 
 const FacultyLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
