@@ -1,0 +1,224 @@
+/* Recruiter Sidebar Styles */
+.recruiter-portal .recruiter-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 250px;
+  background-color: #198754;
+  color: white;
+  z-index: 1040;
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Collapsed state */
+.recruiter-portal .recruiter-sidebar.closed {
+  width: 60px;
+  transition: all 0.3s ease;
+}
+/* Sidebar content container */
+.recruiter-portal .sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+/* Custom scrollbar for webkit browsers */
+.recruiter-portal .sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+/* Sidebar header */
+.recruiter-portal .sidebar-header {
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.closed .sidebar-header {
+  padding: 0.5rem;
+  justify-content: center;
+}
+.sidebar-header h5 {
+  color: white;
+  font-weight: 600;
+  margin: 0;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Sidebar menu items */
+.sidebar-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+
+/* Nav link styles */
+.sidebar-menu .nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease;
+  margin: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-menu .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white !important;
+}
+
+.sidebar-menu .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15) ;
+  color: white !important;
+  font-weight: 500;
+}
+
+/* Active indicator */
+.active-indicator {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background-color: white;
+  border-radius: 2px;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile backdrop */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1039;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .recruiter-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .recruiter-sidebar.open {
+    transform: translateX(0);
+    width: 250px;
+  }
+  
+  .recruiter-sidebar.closed {
+    transform: translateX(-100%);
+  }
+}
+
+/* Animation for smooth transitions */
+.recruiter-sidebar,
+.recruiter-sidebar .sidebar-content,
+.recruiter-sidebar .sidebar-menu .nav-link,
+.recruiter-sidebar .sidebar-header {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Toggle button styles */
+.btn-link.text-white {
+  transition: all 0.2s ease;
+}
+
+.btn-link.text-white:hover {
+  opacity: 0.8;
+}
+
+/* Ensure icons have proper spacing */
+.nav-link .me-3 {
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Adjust padding for collapsed state */
+.recruiter-sidebar.closed .nav-link {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.recruiter-sidebar.closed .nav-link .me-3 {
+  margin-right: 0;
+}
+
+/* Hide text when sidebar is collapsed */
+.recruiter-sidebar.closed .nav-text {
+  display: none;
+}
+
+/* Show tooltip on hover when collapsed */
+.recruiter-sidebar.closed .nav-link:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #333;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  margin-left: 1rem;
+  font-size: 0.875rem;
+  z-index: 1050;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+/* Scrollbar styling */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}

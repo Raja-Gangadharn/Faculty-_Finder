@@ -1,0 +1,128 @@
+/* Footer Styles */
+.faculty-portal .faculty-footer {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  padding: 2.5rem 0 1rem;
+  font-size: 0.9rem;
+  border-top: 1px solid #e9ecef;
+  line-height: 1.6;
+}
+
+.faculty-portal .footer-links-row {
+  margin-bottom: 2rem;
+}
+
+.footer-section {
+  margin-bottom: 1.5rem;
+}
+
+.faculty-portal .footer-heading {
+  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.faculty-portal .footer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.faculty-portal .footer-list li {
+  margin-bottom: 0.5rem;
+}
+
+.faculty-portal .footer-list a {
+  color: #6c757d;
+  text-decoration: none;
+  transition: color 0.2s ease, padding-left 0.2s ease;
+  display: inline-block;
+}
+
+.faculty-portal .footer-list a:hover {
+  color: #0d6efd;
+  padding-left: 0.5rem;
+}
+
+.faculty-portal .footer-icon {
+  margin-right: 0.5rem;
+  color: #0d6efd;
+}
+
+.footer-bottom {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1.5rem;
+  align-items: center;
+}
+
+.legal-links {
+  margin-top: 0.5rem;
+}
+
+.legal-links a {
+  color: #6c757d;
+  text-decoration: none;
+  margin: 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.legal-links a:hover {
+  color: #0d6efd;
+  text-decoration: underline;
+}
+
+.divider {
+  color: #dee2e6;
+  font-size: 0.85rem;
+}
+
+.faculty-portal .social-links a {
+  color: #6c757d;
+  margin-left: 1rem;
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.faculty-portal .social-links a:hover {
+  color: #fff !important;
+  background-color: #0d6efd !important;
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer-section {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .footer-bottom {
+    text-align: center;
+  }
+  
+  .legal-links {
+    margin: 1rem 0;
+  }
+  
+  .social-links {
+    justify-content: center !important;
+    margin-top: 1rem;
+  }
+  
+  .faculty-footer {
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+}

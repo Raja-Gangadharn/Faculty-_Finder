@@ -1,0 +1,262 @@
+/* Profile Page Styling */
+.nav-pills .nav-link {
+  color: #495057;
+  border-radius: 0;
+  padding: 1rem 1.25rem;
+  transition: all 0.3s;
+}
+
+.nav-pills .nav-link:hover {
+  background-color: #494c4f;
+  color: white !important;
+}
+
+.nav-pills .nav-link.active {
+  background-color: #0d6efd;
+  color: white;
+  font-weight: 500;
+}
+
+/* Form Styling */
+.profile-section {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Form Controls */
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+/* File Upload */
+.file-upload {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.file-upload-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Add/Remove Buttons */
+.btn-add {
+  color: #0d6efd;
+  background-color: transparent;
+  border: 1px dashed #0d6efd;
+  padding: 0.375rem 0.75rem;
+}
+
+.btn-add:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.btn-remove {
+  color: #dc3545;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991.98px) {
+  .profile-section {
+    padding: 1rem;
+  }
+  
+  .nav-pills .nav-link {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Profile Photo */
+.profile-photo-container {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #f8f9fa;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-upload-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.profile-photo-container:hover .photo-upload-overlay {
+  opacity: 1;
+}
+
+/* Experience and Education Items */
+.experience-item,
+.education-item {
+  position: relative;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  border-left: 3px solid #0d6efd;
+}
+
+.experience-item h6,
+.education-item h6 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.experience-item p,
+.education-item p {
+  margin-bottom: 0.25rem;
+  color: #6c757d;
+}
+
+.experience-item .date,
+.education-item .date {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Experience Tabs */
+.nav-tabs {
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 1.5rem;
+}
+
+.nav-tabs .nav-link {
+  color: #495057;
+  border: 1px solid transparent;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-tabs .nav-link:hover {
+  border-color: #e9ecef #e9ecef #dee2e6;
+  color: #0d6efd !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
+  background-color: #fff;
+  border-color: #dee2e6 #dee2e6 #fff;
+  border-bottom: 2px solid #0d6efd;
+}
+
+
+
+/* Responsive Tables */
+.table-responsive {
+  margin-bottom: 1.5rem;
+}
+
+/* Custom Checkbox and Radio */
+.form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+/* Custom Select */
+.form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Custom File Upload */
+.form-control[type="file"] {
+  padding: 0.375rem 0.5rem;
+  height: auto;
+}
+
+/* Education Accordion Overrides */
+.education-accordion .accordion-item {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.375rem !important;
+  margin-bottom: 0.5rem !important;
+  overflow: hidden;
+}
+
+.education-accordion .accordion-button {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.education-accordion .accordion-button:not(.collapsed) {
+  background-color: #f1f3f5 !important;
+  color: #212529 !important;
+  box-shadow: none !important;
+}
+
+
+.education-accordion .accordion-body {
+  padding: 1rem 1.25rem !important;
+  border-top: 1px solid #dee2e6 !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.nav-pills .nav-link,
+.nav-pills .nav-link:hover,
+.nav-pills .nav-link:focus {
+  text-decoration: none !important;
+}

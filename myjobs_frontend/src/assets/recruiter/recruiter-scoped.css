@@ -1,0 +1,68 @@
+/* Recruiter Portal Scoped Styles */
+.recruiter-portal {
+  /* Import all recruiter CSS files */
+  @import './TopNavbar.css';
+  @import './Sidebar.css';
+  @import './Footer.css';
+  @import './Feedback.css';
+  @import './FloatingActionButton.css';
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content area styling */
+.recruiter-portal .main-content {
+  transition: margin-left 0.3s ease;
+  margin-left: 250px; /* Default sidebar width */
+  width: calc(100% - 250px);
+  padding-top: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* When sidebar is closed */
+.recruiter-portal .main-content.sidebar-closed {
+  margin-left: 60px;
+  width: calc(100% - 60px);
+}
+
+/* Content wrapper for proper spacing */
+.recruiter-portal .content-wrapper {
+  flex: 1;
+  padding-bottom: 2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .recruiter-portal .main-content,
+  .recruiter-portal .main-content.sidebar-closed {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 1rem;
+  }
+}
+
+/* Override any conflicting Bootstrap styles within recruiter portal */
+.recruiter-portal .btn-primary {
+  background-color: #2ecc71;
+  border-color: #2ecc71;
+}
+
+.recruiter-portal .btn-primary:hover {
+  background-color: #27ae60;
+  border-color: #27ae60;
+}
+
+/* Ensure the body has no default margin/padding */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Make sure the html element takes full height */
+html {
+  height: 100%;
+}

@@ -1,0 +1,73 @@
+/* Main layout structure */
+.main-content {
+  margin-left: 250px; /* Same as sidebar width */
+  transition: margin 0.3s ease;
+  width: calc(100% - 250px);
+  padding-top: 56px; /* Height of the navbar */
+  min-height: calc(100vh - 56px);
+  background-color: #f8f9fa;
+}
+
+/* When sidebar is closed */
+.recruiter-sidebar.closed + .main-content {
+  margin-left: 60px; /* Collapsed sidebar width */
+  width: calc(100% - 60px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .recruiter-sidebar.closed + .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Smooth transitions */
+.sidebar {
+  transition: all 0.3s ease;
+}
+
+/* Ensure content doesn't get hidden behind fixed elements */
+body {
+  padding-top: 56px;
+  padding-bottom: 60px; /* Height of the footer */
+}
+
+/* Sticky footer */
+.min-vh-100 {
+  min-height: 100vh !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
+}
+/* Add some padding to the main content area */
+.py-3 {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+/* Style for the main content container */
+.container-fluid {
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 576px) {
+  .container-fluid {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+  
+  .p-3 {
+    padding: 0.75rem !important;
+  }
+}

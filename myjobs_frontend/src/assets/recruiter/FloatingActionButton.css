@@ -1,0 +1,41 @@
+.fab-btn {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: 50px;
+  height: 50px;
+  background-color: #198754 ;
+  color: #fff;
+  z-index: 1080;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s;
+}
+
+.fab-btn:hover {
+  background-color: #146c43;
+  transform: translateY(-2px);
+}
+
+.fab-label {
+  margin-left: 5px;
+  font-weight: 600;
+}
+
+/* Modal backdrop uses blur */
+.fab-backdrop {
+  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Remove border radius for a cleaner card look */
+.fab-modal-dialog .modal-content {
+  border-radius: 0.75rem;
+}
+
+/* Blur entire page when modal is open */
+body.fab-modal-open main,
+body.fab-modal-open .main-content,
+body.fab-modal-open .dashboard-wrapper {
+  filter: blur(4px);
+}

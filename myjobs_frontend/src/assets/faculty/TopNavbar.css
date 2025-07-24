@@ -1,0 +1,139 @@
+/* Top Navigation Bar Styles */
+.faculty-portal .top-navbar {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.3s, border-color 0.3s;
+  margin-left: 0;
+}
+
+/* Sidebar toggle button */
+.faculty-portal .top-navbar .btn-link {
+  color: #495057;
+  text-decoration: none;
+  transition: color 0.2s;
+  padding: 0.25rem 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.top-navbar .btn-link:hover {
+  color: #2c3e50;
+  text-decoration: none;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+/* Dark mode styles */
+.faculty-portal.dark-mode .top-navbar {
+  background-color: #1a1a2e;
+  border-bottom-color: #2d3748;
+}
+
+.faculty-portal.dark-mode .top-navbar .btn-link {
+  color: #e2e8f0;
+}
+
+.faculty-portal.dark-mode .top-navbar .btn-link:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.faculty-portal .top-navbar .navbar-toggler {
+  border: none;
+  padding: 0.5rem 1rem;
+  margin-left: 1rem;
+}
+
+.top-navbar .navbar-toggler:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.top-navbar .nav-link {
+  color: #6c757d !important;
+  padding: 0.5rem 1rem;
+  position: relative;
+}
+
+.top-navbar .nav-link:hover {
+  color: #0d6efd !important;
+}
+
+.top-navbar .badge {
+  font-size: 0.6rem;
+  padding: 0.25em 0.4em;
+  font-weight: 500;
+}
+
+/* User Profile Section */
+.user-profile {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 4px;
+}
+
+.user-profile:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Notifications Popover */
+.popover.notifications-popover {
+  min-width: 260px;
+}
+
+.notifications-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.list-group-item.unread {
+  background-color: #f1f5ff;
+  font-weight: 600;
+}
+
+/* dark mode overrides in global file but add specifics here */
+body.dark-mode .popover {
+  background-color: #2c2c2c;
+  color: #ffffff;
+}
+body.dark-mode .notifications-header {
+  background-color: #333333;
+  border-color: rgba(255,255,255,0.1);
+}
+body.dark-mode .list-group-item.unread {
+  background-color: rgba(13,110,253,0.2);
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+  .top-navbar {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .top-navbar .navbar-collapse {
+    background: #fff;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .user-profile {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-top: 1px solid #eee;
+  }
+}

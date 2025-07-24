@@ -1,0 +1,23 @@
+/* Faculty Portal Scoped Styles */
+.faculty-portal {
+  /* Import all faculty CSS files */
+  @import './faculty-global.css';
+  @import './Sidebar.css';
+  @import './TopNavbar.css';
+  @import './Footer.css';
+  @import './sidebar-footer.css';
+  @import './Tutorial.css';
+}
+
+/* Override any conflicting Bootstrap styles within faculty portal */
+.faculty-portal .btn-primary {
+  background-color: #3498db;
+  border-color: #3498db;
+}
+
+.faculty-portal .btn-primary:hover {
+  background-color: #2980b9;
+  border-color: #2980b9;
+}
+
+/* Add other faculty-specific overrides as needed */

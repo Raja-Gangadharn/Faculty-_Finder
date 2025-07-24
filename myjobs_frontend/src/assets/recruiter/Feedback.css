@@ -1,0 +1,34 @@
+.faq-header {
+  background-color: #198754; /* green */
+}
+
+.faq-page .container {
+  max-width: 800px;
+}
+
+.accordion-item {
+  border: 1px solid #198754;
+}
+
+.accordion-button {
+  background-color: #198754;
+  color: #fff;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: #198754;
+  color: #fff;
+  box-shadow: none;
+}
+
+/* Optional: Customize accordion icons */
+.accordion-button::after {
+  background-image: none;
+  content: '+';
+  font-weight: bold;
+}
+
+.accordion-button:not(.collapsed)::after {
+  background-image: none;
+  content: '-';
+}

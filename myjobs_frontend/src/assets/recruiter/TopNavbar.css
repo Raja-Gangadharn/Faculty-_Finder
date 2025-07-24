@@ -1,0 +1,138 @@
+/* Recruiter Top Navbar Styles */
+.recruiter-portal .recruiter-navbar {
+  padding: 0.5rem 0;
+  z-index: 1030;
+  background-color: #fff !important;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Search bar styling */
+.recruiter-portal .search-bar {
+  max-width: 500px;
+  margin: 0 auto;
+}
+a.es_mg_lft.text-success.fw-bold.navbar-brand {
+  transition: margin-left 0.3s ease;
+}
+
+/* Brand offset when sidebar is open (width 250px) */
+.recruiter-portal .recruiter-sidebar.open ~ .recruiter-navbar a.es_mg_lft.text-success.fw-bold.navbar-brand {
+  margin-left: 250px;
+}
+
+/* Brand offset when sidebar is collapsed (width 60px) */
+.recruiter-portal .recruiter-sidebar.closed ~ .recruiter-navbar a.es_mg_lft.text-success.fw-bold.navbar-brand,
+.recruiter-portal .recruiter-sidebar ~ .recruiter-navbar a.es_mg_lft.text-success.fw-bold.navbar-brand {
+  margin-left: 60px;
+}
+.recruiter-portal .search-bar .form-control {
+  border-color: #198754;
+  border-radius: 20px 0 0 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-right: none;
+  margin-left: 84px;
+}
+
+.recruiter-portal .search-bar .btn-outline-success {
+  border-color: #198754;
+  color: #198754;
+  border-radius: 0 20px 20px 0;
+  border-left: none;
+  padding: 0.5rem 1rem;
+}
+.recruiter-portal .search-bar .btn-outline-success:hover {
+  background-color: #198754;
+  color: white;
+}
+
+/* Notification icons */
+.recruiter-portal .nav-link {
+  color: #6c757d !important;
+  padding: 0.5rem 0.75rem !important;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #198754 !important;
+}
+
+/* Badge styling */
+.badge {
+  font-size: 0.6rem;
+  padding: 0.25rem 0.4rem;
+  font-weight: 500;
+}
+
+/* User dropdown */
+.dropdown-toggle::after {
+  display: none;
+}
+
+.dropdown-menu {
+  border: none;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  margin-top: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1.5rem;
+  color: #212529;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover, 
+.dropdown-item:focus {
+  background-color: #f8f9fa;
+  color: #198754;
+}
+
+.dropdown-divider {
+  margin: 0.5rem 0;
+  border-top: 1px solid #eee;
+}
+
+/* User avatar */
+.avatar {
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #198754;
+  color: white;
+  width: 36px;
+  height: 36px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .search-bar {
+    max-width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  .navbar-collapse {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    margin-top: 0.5rem;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 0 !important;
+  }
+  
+  .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    margin: 0.5rem 0 0 0;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: none;
+  }
+}
