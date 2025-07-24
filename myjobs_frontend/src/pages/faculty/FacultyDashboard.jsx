@@ -171,11 +171,11 @@ const FacultyDashboard = () => {
                     <h6 className="text-muted mb-1">{stat.title}</h6>
                     <h3 className="mb-0">{stat.value}</h3>
                   </div>
-                  <div className={`bg-${stat.trend === 'up' ? 'success' : stat.trend === 'down' ? 'danger' : 'secondary'}-subtle p-3 rounded-circle`}>
+                  <div className={`trend-indicator ${stat.trend || 'neutral'}`}>
                     {stat.trend === 'up' ? '↑' : stat.trend === 'down' ? '↓' : '→'}
                   </div>
                 </div>
-                <div className={`mt-2 text-${stat.trend === 'up' ? 'success' : stat.trend === 'down' ? 'danger' : 'muted'}`}>
+                <div className={`mt-2 trend-text ${stat.trend || 'neutral'}`}>
                   {stat.change} {stat.trend === 'up' ? 'from last month' : stat.trend === 'down' ? 'from last month' : 'no change'}
                 </div>
               </Card.Body>

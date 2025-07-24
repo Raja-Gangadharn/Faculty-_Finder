@@ -38,6 +38,100 @@
   background-color: #f5f7fa;
 }
 
+/* Trend Indicators */
+.faculty-portal .trend-indicator {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.faculty-portal .trend-indicator.up {
+  background-color: rgba(25, 135, 84, 0.15);
+  color: #198754;
+}
+
+.faculty-portal .trend-indicator.down {
+  background-color: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+}
+
+.faculty-portal .trend-indicator.neutral {
+  background-color: rgba(108, 117, 125, 0.15);
+  color: #6c757d;
+}
+
+.faculty-portal .trend-text {
+  font-size: 0.85rem;
+  transition: color 0.3s ease;
+}
+
+.faculty-portal .trend-text.up {
+  color: #198754;
+}
+
+.faculty-portal .trend-text.down {
+  color: #dc3545;
+}
+
+.faculty-portal .trend-text.neutral {
+  color: #6c757d;
+}
+
+/* Dark mode overrides for tutorial button */
+.faculty-portal.dark-mode .tutorial-btn  {
+  background-color: #50505c;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.faculty-portal.dark-mode .tutorial-btn svg {
+  color: #a9adb2;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.faculty-portal.dark-mode .tutorial-btn:hover {
+  background-color: #0571ffec;
+}
+
+.faculty-portal.dark-mode .tutorial-btn:hover svg {
+  color: #fff;
+}
+
+/* Dark mode overrides for trend indicators */
+.faculty-portal.dark-mode .trend-indicator.up {
+  background-color: rgba(25, 135, 84, 0.25);
+  color: #75b798;
+}
+
+.faculty-portal.dark-mode .trend-indicator.down {
+  background-color: rgba(220, 53, 69, 0.25);
+  color: #ea868f;
+}
+
+.faculty-portal.dark-mode .trend-indicator.neutral {
+  background-color: rgba(173, 181, 189, 0.2);
+  color: #adb5bd;
+}
+
+.faculty-portal.dark-mode .trend-text.up {
+  color: #75b798;
+}
+
+.faculty-portal.dark-mode .trend-text.down {
+  color: #ea868f;
+}
+
+.faculty-portal.dark-mode .trend-text.neutral {
+  color: #adb5bd;
+}
+
 /* Cards */
 .faculty-portal .card {
   border: none;

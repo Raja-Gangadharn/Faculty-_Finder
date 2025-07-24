@@ -12,14 +12,25 @@
     align-items: center;
     justify-content: center;
     z-index: 1050;
-    transition: transform 0.2s ease-in-out;
+    transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 0; /* Ensure no padding affects the icon size */
+    line-height: 1; /* Reset line height */
   }
   
   .tutorial-btn:hover {
     transform: scale(1.1);
     background-color: #0571ffec;
   }
+
+  /* Ensure the icon inside the button is properly sized */
+  .tutorial-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0; /* Prevent icon from shrinking */
+  }
+
+  /* Dark mode styles moved to faculty-global.css */
   
   /* Tutorial Modal Styles */
   .tutorial-modal .modal-content {

@@ -24,11 +24,11 @@ const Tutorial = () => {
       {/* Floating Tutorial Button */}
       <Button 
         variant="outline-light"
-        className="tutorial-btn rounded-circle"
+        className="tutorial-btn rounded-circle p-0"
         onClick={handleShow}
+        aria-label="Open tutorial"
       >
-        <FaPlayCircle size={30} color="white" />
-
+        <FaPlayCircle className="tutorial-icon" />
       </Button>
 
       {/* Tutorial Modal */}
