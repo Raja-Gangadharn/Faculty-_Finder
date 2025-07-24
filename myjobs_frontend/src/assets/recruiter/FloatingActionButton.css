@@ -16,6 +16,11 @@
   background-color: #146c43;
   transform: translateY(-2px);
 }
+.fab-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
 
 .fab-label {
   margin-left: 5px;

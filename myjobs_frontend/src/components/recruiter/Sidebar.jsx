@@ -99,7 +99,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             )}
           </div>
           
-          <div className="sidebar-menu">
+          <div className="recruiter-sidebar-menu">
             <Nav className="flex-column px-2 py-3">
               {menuItems.map((item) => (
                 <Nav.Item key={item.id} className="mb-1">

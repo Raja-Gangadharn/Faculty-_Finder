@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button } from 'react-bootstrap';
-import { FaHeart } from 'react-icons/fa';
+import { FaPlayCircle } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import '../../assets/recruiter/FloatingActionButton.css';
-import { FaQuestionCircle } from 'react-icons/fa';
 
 const FloatingActionButton = () => {
   const location = useLocation();
@@ -35,7 +34,7 @@ const FloatingActionButton = () => {
         onClick={handleOpen}
         aria-label="Donate"
       >
-        <FaQuestionCircle size={24} color="white" />
+        <FaPlayCircle className="tutorial-icon" />
       </button>
 
       <Modal

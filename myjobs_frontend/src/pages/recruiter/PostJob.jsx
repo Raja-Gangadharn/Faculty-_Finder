@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Form, Button, Row, Col, Table, Alert } from 'react-bootstrap';
 import { FaPlusCircle } from 'react-icons/fa';
+import { Modal } from 'react-bootstrap';
 
 const PostJob = () => {
-  // Form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -17,11 +17,12 @@ const PostJob = () => {
     pdf: null,
   });
 
-  const [jobs, setJobs] = useState([]); // list of posted jobs
+  const [jobs, setJobs] = useState([]);
   const [validated, setValidated] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [showAlert, setShowAlert] = useState({ show: false, message: '', variant: 'success' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState(null);
 
-  // Generic form change handler
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
@@ -30,45 +31,72 @@ const PostJob = () => {
     }));
   };
 
-  // Submit handler
   const handleSubmit = (e) => {
     e.preventDefault();
     const form = e.currentTarget;
-    if (form.checkValidity() === false) {
+  
+    if (!form.checkValidity()) {
       e.stopPropagation();
-    } else {
-      // Add job to state list
-      const newJob = {
-        id: Date.now(),
-        ...formData,
-        postedAt: new Date(),
-      };
-      setJobs((prev) => [newJob, ...prev]);
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        salary: '',
-        location: '',
-        experience: '',
-        course: '',
-        eligibility: '',
-        skills: '',
-        deadline: '',
-        pdf: null,
-      });
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+      setValidated(true);
+      return;
     }
-    setValidated(true);
+  
+    const newJob = {
+      id: crypto.randomUUID(),
+      ...formData,
+      postedAt: new Date(),
+    };
+  
+    setJobs((prev) => [newJob, ...prev]);
+  
+    setFormData({
+      title: '',
+      description: '',
+      salary: '',
+      location: '',
+      experience: '',
+      course: '',
+      eligibility: '',
+      skills: '',
+      deadline: '',
+      pdf: null,
+    });
+  
+    setValidated(false); // reset validation state
+    setShowAlert({
+      show: true,
+      message: 'Job posted successfully!',
+      variant: 'success'
+    });
+    setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
   };
 
   const todayISO = new Date().toISOString().split('T')[0];
 
-  // Determine job status
   const getStatus = (deadline) => {
     if (!deadline) return 'Live';
     return new Date(deadline) >= new Date() ? 'Live' : 'Expired';
+  };
+
+  const handleDeleteClick = (jobId) => {
+    setJobToDelete(jobId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setJobs(jobs.filter(job => job.id !== jobToDelete));
+    setShowDeleteConfirm(false);
+    setShowAlert({
+      show: true,
+      message: 'Job deleted successfully!',
+      variant: 'danger'
+    });
+    setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
+  };
+
+  const cancelDelete = () => {
+    setJobToDelete(null);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -77,12 +105,28 @@ const PostJob = () => {
         <FaPlusCircle className="me-2" /> Post a New Job
       </h3>
 
-      {/* Success alert */}
-      {showAlert && (
-        <Alert variant="success">Job posted successfully!</Alert>
+      {showAlert.show && (
+        <Alert variant={showAlert.variant} onClose={() => setShowAlert({ ...showAlert, show: false })} dismissible>
+          {showAlert.message}
+        </Alert>
       )}
 
-      {/* Job posting form */}
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteConfirm} onHide={cancelDelete} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this job posting? This action cannot be undone.</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={cancelDelete}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={confirmDelete}>
+            Delete Job
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       <Card className="mb-5 shadow-sm">
         <Card.Body>
           <Form noValidate validated={validated} onSubmit={handleSubmit}>
@@ -248,7 +292,6 @@ const PostJob = () => {
         </Card.Body>
       </Card>
 
-      {/* Posted jobs list */}
       <h4 className="mb-3">Your Posted Jobs</h4>
       {jobs.length === 0 ? (
         <p className="text-muted">No jobs posted yet.</p>
@@ -262,6 +305,7 @@ const PostJob = () => {
                   <th>Posted On</th>
                   <th>Deadline</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,11 +316,22 @@ const PostJob = () => {
                     <td>{job.deadline || '-'}</td>
                     <td>
                       <span
-                        className={`badge bg-$
-                        {getStatus(job.deadline) === 'Live' ? 'success' : 'secondary'}`}
+                        className={`badge bg-${
+                          getStatus(job.deadline) === 'Live' ? 'success' : 'secondary'
+                        }`}
                       >
                         {getStatus(job.deadline)}
                       </span>
+                    </td>
+                    <td>
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteClick(job.id)}
+                        title="Delete Job"
+                      >
+                        <i className="bi bi-trash"></i>
+                      </Button>
                     </td>
                   </tr>
                 ))}
