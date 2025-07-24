@@ -7,7 +7,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import '../node_modules/bootstrap-icons/font/bootstrap-icons.css';
 import './index.css';
-import './assets/faculty/faculty-global.css';
 import App from './App.jsx';
 
 // Initialize the application

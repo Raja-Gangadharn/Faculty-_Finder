@@ -11,18 +11,21 @@ const TopNavbar = ({ onToggleSidebar }) => {
 
   // Theme state handling
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
+    return localStorage.getItem('facultyTheme') === 'dark';
   });
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add('dark-mode');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark-mode');
-      localStorage.setItem('theme', 'light');
+    const facultyPortal = document.querySelector('.faculty-portal');
+    if (facultyPortal) {
+      if (isDarkMode) {
+        facultyPortal.classList.add('dark-mode');
+        localStorage.setItem('facultyTheme', 'dark');
+      } else {
+        facultyPortal.classList.remove('dark-mode');
+        localStorage.setItem('facultyTheme', 'light');
+      }
     }
   }, [isDarkMode]);
   // Dummy notifications; replace with real data later

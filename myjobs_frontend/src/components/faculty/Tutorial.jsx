@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Container, Row, Col } from 'react-bootstrap';
-import { FaQuestionCircle } from 'react-icons/fa';
+import { FaPlayCircle } from 'react-icons/fa';
 import '../../assets/faculty/Tutorial.css'
 
 const TUTORIAL_CONTENT = {
@@ -24,10 +24,11 @@ const Tutorial = () => {
       {/* Floating Tutorial Button */}
       <Button 
         variant="outline-light"
-        className="tutorial-btn"
+        className="tutorial-btn rounded-circle"
         onClick={handleShow}
       >
-        <FaQuestionCircle size={24} color="white" />
+        <FaPlayCircle size={30} color="white" />
+
       </Button>
 
       {/* Tutorial Modal */}

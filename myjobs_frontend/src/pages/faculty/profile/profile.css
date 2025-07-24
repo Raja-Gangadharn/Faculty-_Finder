@@ -7,8 +7,8 @@
 }
 
 .nav-pills .nav-link:hover {
-  background-color: #494c4f;
-  color: white !important;
+  background-color: #c1c8cec8;
+  color: rgb(40, 38, 38) !important;
 }
 
 .nav-pills .nav-link.active {

@@ -22,6 +22,19 @@ const FacultyLayout = () => {
     closeSidebar();
   }, [location]);
 
+  // Apply dark mode class on component mount
+  useEffect(() => {
+    const facultyTheme = localStorage.getItem('facultyTheme');
+    const facultyPortal = document.querySelector('.faculty-portal');
+    if (facultyPortal) {
+      if (facultyTheme === 'dark') {
+        facultyPortal.classList.add('dark-mode');
+      } else {
+        facultyPortal.classList.remove('dark-mode');
+      }
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center min-vh-100">
