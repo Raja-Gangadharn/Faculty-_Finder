@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Table, Form, Button, Row, Col, Modal, Pagination } from 'react-bootstrap';
 
 // Mock data – replace with API data later:
@@ -20,6 +21,7 @@ const mockMarkedProfiles = [
 const PAGE_SIZE = 5;
 
 const MarkedProfiles = () => {
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState(mockMarkedProfiles);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,13 +86,26 @@ const MarkedProfiles = () => {
               ) : (
                 paginated.map((p) => (
                   <tr key={p.id}>
-                    <td>{p.name}</td>
+                    <td>
+                      <span 
+                        className="text-primary" 
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => navigate(`/recruiter/faculty/${p.facultyId || p.id}`)}
+                      >
+                        {p.name}
+                      </span>
+                    </td>
                     <td>{p.email}</td>
                     <td>{p.department}</td>
                     <td>{p.preference}</td>
                     <td className="text-end">
-                      <Button variant="primary" size="sm" className="me-2">
-                        View
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        className="me-2"
+                        onClick={() => navigate(`/recruiter/faculty/${p.facultyId || p.id}`)}
+                      >
+                        View Profile
                       </Button>
                       <Button variant="danger" size="sm" onClick={() => setDeleteTarget(p)}>
                         Remove

@@ -1,68 +1,104 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button } from 'react-bootstrap';
-import { FaPlayCircle } from 'react-icons/fa';
+import { FaPlayCircle,FaCommentDots, FaPlus, FaTimes, FaMobile, FaPhone } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import '../../assets/recruiter/FloatingActionButton.css';
+import ContactUs from './ContactUs';
+import Feedback from './Feedback';
+import { FaStar } from 'react-icons/fa';
 
 const FloatingActionButton = () => {
   const location = useLocation();
   const isRecruiterRoute = location.pathname.startsWith('/recruiter');
-  
-  // Don't render anything if not on recruiter route
-  if (!isRecruiterRoute) {
-    return null;
-  }
-  const [show, setShow] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showContactUs, setShowContactUs] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
-  const handleOpen = () => setShow(true);
-  const handleClose = () => setShow(false);
+  if (!isRecruiterRoute) return null;
 
-  // Blur background when modal open
-  useEffect(() => {
-    const body = document.body;
-    if (show) {
-      body.classList.add('fab-modal-open');
-    } else {
-      body.classList.remove('fab-modal-open');
-    }
-  }, [show]);
+  const toggleMenu = () => setExpanded(!expanded);
+
+  const openTutorial = () => {
+    setShowTutorial(true);
+    setExpanded(false);
+  };
+
+  const closeTutorial = () => setShowTutorial(false);
 
   return (
     <>
+      {/* Sub Buttons */}
+      <div className={`fab-sub-buttons ${expanded ? 'show' : ''}`}>
+        <button 
+          className="fab-sub-btn" 
+          title="Contact Us" 
+          onClick={() => {
+            setShowContactUs(true);
+            setExpanded(false);
+          }}
+        >
+          <FaPhone />
+        </button>
+        <button 
+          className="fab-sub-btn" 
+          title="Feedback" 
+          onClick={() => {
+            setShowFeedback(true);
+            setExpanded(false);
+          }}
+        >
+          <FaCommentDots />
+        </button>
+        <button className="fab-sub-btn" title="Tutorial" onClick={openTutorial}>
+          <FaPlayCircle />
+        </button>
+      </div>
+
+      {/* Main FAB */}
       <button
         className="fab-btn btn rounded-circle d-flex align-items-center justify-content-center"
-        onClick={handleOpen}
-        aria-label="Donate"
+        onClick={toggleMenu}
+        aria-label="Menu"
       >
-        <FaPlayCircle className="tutorial-icon" />
+        {expanded ? <FaTimes /> : <FaPlus />}
       </button>
 
+      {/* Contact Us Modal */}
+      <ContactUs 
+        show={showContactUs} 
+        onHide={() => setShowContactUs(false)} 
+      />
+
+      {/* Feedback Modal */}
+      <Feedback 
+        show={showFeedback} 
+        onHide={() => setShowFeedback(false)} 
+      />
+
+      {/* Tutorial Modal */}
       <Modal
-        show={show}
-        onHide={handleClose}
+        show={showTutorial}
+        onHide={closeTutorial}
         centered
         backdropClassName="fab-backdrop"
-        dialogClassName="fab-modal-dialog">
+        dialogClassName="fab-modal-dialog"
+      >
         <Modal.Header closeButton>
-          <Modal.Title>Your Support Matters</Modal.Title>
+          <Modal.Title>Tutorial</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {/* Embedded YouTube video */}
           <div className="ratio ratio-16x9">
-            {/* Replace the videoId with your actual YouTube video ID */}
             <iframe
               src={`https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0`}
-              title="Faculty Finder Donation Video"
+              title="Tutorial Video"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           </div>
-          
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Close
-          </Button>
+          <Button variant="secondary" onClick={closeTutorial}>Close</Button>
         </Modal.Footer>
       </Modal>
     </>

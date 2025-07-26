@@ -204,7 +204,7 @@ const RecruiterDashboard = () => {
 
       <Row>
         {/* Recent Activities */}
-        <Col lg={8} className="mb-4">
+        <Col lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header className="bg-white border-bottom-0 pb-0">
               <h5 className="mb-0">Recent Activities</h5>

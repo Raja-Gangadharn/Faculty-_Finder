@@ -53,15 +53,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { id: 'search-faculty', label: 'Search Faculty', icon: <FaSearch/>, path: '/recruiter/search-faculty' },
     { id: 'saved-profiles', label: 'Saved Profiles', icon: <FaUserTie />, path: '/recruiter/saved-profiles' },
     { id: 'marked-profiles', label: 'Marked Profiles', icon: <FaBriefcase />, path: '/recruiter/marked-profiles' },
-    { id: 'post-job', label: 'Post a Job', icon: <FaEnvelope />, path: '/recruiter/post-job' },
-    { id: 'Contact us', label: 'Contact us', icon: <FaPaperPlane />, path: '/recruiter/contact-us' },
-    { id: 'FAQ', label: 'FAQ', icon: <FaBuilding />, path: '/recruiter/feedback' },
+    { id: 'post-job', label: 'Post a Job', icon: <FaPlusSquare />, path: '/recruiter/post-job' },
+    // { id: 'Contact us', label: 'Contact us', icon: <FaPaperPlane />, path: '/recruiter/contact-us' },
+    // { id: 'FAQ', label: 'FAQ', icon: <FaBuilding />, path: '/recruiter/feedback' },
     // { id: 'Tutorial', label: 'Tutorial', icon: <FaPlusSquare />, path: '/recruiter/Tutorial' },
     
-  ];
-
-  const bottomMenuItems = [
-    { id: 'settings', label: 'Settings', icon: <FaCog />, path: '/recruiter/settings' },
   ];
 
   const handleLogout = async () => {
@@ -121,23 +117,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </Nav>
 
             <div className="sidebar-footer mt-auto px-2 py-3 border-top border-light">
-              {bottomMenuItems.map((item) => (
-                <Nav.Item key={item.id} className="mb-1">
-                  <Nav.Link 
-                    as={Link} 
-                    to={item.path} 
-                    className={`d-flex align-items-center py-2 px-3 rounded ${activeMenu === item.id ? 'active' : 'text-white-50'}`}
-                  >
-                    <div className="d-flex align-items-center">
-                      <span className="me-3">{item.icon}</span>
-                      {isOpen && <span className="font-weight-medium">{item.label}</span>}
-                    </div>
-                    {activeMenu === item.id && isOpen && (
-                      <div className="active-indicator"></div>
-                    )}
-                  </Nav.Link>
-                </Nav.Item>
-              ))}
+              
               <Nav.Item>
                 <Nav.Link 
                   onClick={handleLogout} 

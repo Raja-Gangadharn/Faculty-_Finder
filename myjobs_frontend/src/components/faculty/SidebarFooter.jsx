@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
-import { FaEnvelope, FaCommentDots, FaCheck, FaTimes } from 'react-icons/fa';
-import axios from 'axios';
+import { FaEnvelope, FaCommentDots, FaCheck, FaTimes, FaStar } from 'react-icons/fa';
 import '../../assets/faculty/sidebar-footer.css';
 
 const SidebarFooter = () => {
@@ -14,11 +13,12 @@ const SidebarFooter = () => {
     name: '',
     email: '',
     message: '',
-    feedback: ''
+    feedback: '',
+    rating: 0,
+    hoverRating: 0
   });
 
   useEffect(() => {
-    // Clear status messages after 5 seconds
     if (submitStatus.message) {
       const timer = setTimeout(() => {
         setSubmitStatus({ success: null, message: '' });
@@ -29,25 +29,25 @@ const SidebarFooter = () => {
 
   const validateForm = (type) => {
     const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
+
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    
+
     if (type === 'contact' && !formData.message.trim()) {
       newErrors.message = 'Message is required';
     }
-    
-    if (type === 'feedback' && !formData.feedback.trim()) {
-      newErrors.feedback = 'Feedback is required';
+
+    if (type === 'feedback') {
+      if (!formData.feedback.trim()) newErrors.feedback = 'Feedback is required';
+      if (!formData.rating || formData.rating < 1 || formData.rating > 5) {
+        newErrors.rating = 'Rating is required';
+      }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -58,8 +58,7 @@ const SidebarFooter = () => {
       ...prev,
       [name]: value
     }));
-    
-    // Clear error when user starts typing
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -70,93 +69,79 @@ const SidebarFooter = () => {
 
   const handleSubmit = async (e, type) => {
     e.preventDefault();
-    
-    if (!validateForm(type)) {
-      return;
-    }
-    
+
+    if (!validateForm(type)) return;
+
     setIsSubmitting(true);
     setSubmitStatus({ success: null, message: '' });
-    
+
     try {
-      // Replace with your actual API endpoint
       const endpoint = type === 'contact' ? '/api/contact' : '/api/feedback';
-      const payload = type === 'contact' 
+      const payload = type === 'contact'
         ? { name: formData.name, email: formData.email, message: formData.message }
-        : { name: formData.name, email: formData.email, feedback: formData.feedback };
-      
-      // Simulate API call - replace with actual axios call
-      // const response = await axios.post(endpoint, payload);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-      
+        : { name: formData.name, email: formData.email, feedback: formData.feedback, rating: formData.rating };
+
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulated API delay
+
       setSubmitStatus({
         success: true,
-        message: type === 'contact' 
-          ? 'Your message has been sent successfully! We\'ll get back to you soon.'
-          : 'Thank you for your feedback! We appreciate your input.'
+        message: type === 'contact'
+          ? 'Your message has been sent successfully!'
+          : 'Thank you for your feedback!'
       });
-      
-      // Reset form and close modal after successful submission
+
       setTimeout(() => {
         setFormData({
           name: '',
           email: '',
           message: '',
-          feedback: ''
+          feedback: '',
+          rating: 0,
+          hoverRating: 0
         });
-        
-        if (type === 'contact') {
-          setShowContact(false);
-        } else {
-          setShowFeedback(false);
-        }
-        
+        type === 'contact' ? setShowContact(false) : setShowFeedback(false);
         setIsSubmitting(false);
       }, 2000);
-      
+
     } catch (error) {
       console.error(`Error submitting ${type}:`, error);
       setSubmitStatus({
         success: false,
-        message: 'An error occurred while submitting. Please try again later.'
+        message: 'An error occurred. Please try again later.'
       });
       setIsSubmitting(false);
     }
   };
-  
+
   const handleModalClose = (type) => {
     setErrors({});
     setSubmitStatus({ success: null, message: '' });
-    if (type === 'contact') {
-      setShowContact(false);
-    } else {
-      setShowFeedback(false);
-    }
+    type === 'contact' ? setShowContact(false) : setShowFeedback(false);
   };
 
   return (
     <div className="sidebar-footer">
-      <button 
-        className="sidebar-footer-btn d-flex align-items-center" 
+      <button
+        className="sidebar-footer-btn d-flex align-items-center"
         onClick={() => setShowContact(true)}
         aria-label="Contact Us"
         onKeyDown={(e) => e.key === 'Enter' && setShowContact(true)}
       >
-        <FaEnvelope className="me-2" /> 
+        <FaEnvelope className="me-2" />
         <span>Contact Us</span>
       </button>
-      
-      <button 
-        className="sidebar-footer-btn d-flex align-items-center mt-2" 
+
+      <button
+        className="sidebar-footer-btn d-flex align-items-center mt-2"
         onClick={() => setShowFeedback(true)}
         aria-label="Give Feedback"
         onKeyDown={(e) => e.key === 'Enter' && setShowFeedback(true)}
       >
-        <FaCommentDots className="me-2" /> 
+        <FaCommentDots className="me-2" />
         <span>Feedback</span>
       </button>
 
-      {/* Contact Us Modal */}
+      {/* Contact Modal (unchanged) */}
       <Modal 
         show={showContact} 
         onHide={() => handleModalClose('contact')}
@@ -274,9 +259,9 @@ const SidebarFooter = () => {
         </Form>
       </Modal>
 
-      {/* Feedback Modal */}
-      <Modal 
-        show={showFeedback} 
+      {/* Feedback Modal with Star Rating */}
+      <Modal
+        show={showFeedback}
         onHide={() => handleModalClose('feedback')}
         className="modal-custom"
         centered
@@ -289,7 +274,6 @@ const SidebarFooter = () => {
             Share Your Feedback
           </Modal.Title>
         </Modal.Header>
-        
         <Form onSubmit={(e) => handleSubmit(e, 'feedback')} noValidate>
           <Modal.Body>
             {submitStatus.message && (
@@ -298,41 +282,45 @@ const SidebarFooter = () => {
                 {submitStatus.message}
               </Alert>
             )}
-            
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                isInvalid={!!errors.name}
-                disabled={isSubmitting}
-                placeholder="Your name (optional)"
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.name}
-              </Form.Control.Feedback>
+
+            <Form.Group className="mb-3 text-center">
+              <Form.Label className="d-block mb-2">
+                How would you rate your experience?
+              </Form.Label>
+              <div className="star-rating d-flex justify-content-center">
+                {[...Array(5)].map((_, index) => {
+                  const ratingValue = index + 1;
+                  return (
+                    <label key={index}>
+                      <input
+                        type="radio"
+                        name="rating"
+                        value={ratingValue}
+                        onClick={() => setFormData(prev => ({ ...prev, rating: ratingValue }))}
+                        className="d-none"
+                        disabled={isSubmitting}
+                      />
+                      <FaStar
+                        className="star"
+                        size={28}
+                        color={
+                          ratingValue <= (formData.hoverRating || formData.rating)
+                            ? '#ffc107'
+                            : '#e4e5e9'
+                        }
+                        onMouseEnter={() => setFormData(prev => ({ ...prev, hoverRating: ratingValue }))}
+                        onMouseLeave={() => setFormData(prev => ({ ...prev, hoverRating: 0 }))}
+                        style={{ cursor: 'pointer', margin: '0 4px' }}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              {errors.rating && <div className="text-danger mt-2">{errors.rating}</div>}
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control 
-                type="email" 
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                isInvalid={!!errors.email}
-                disabled={isSubmitting}
-                placeholder="your.email@example.com (optional)"
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.email}
-              </Form.Control.Feedback>
-            </Form.Group>
-            
-            <Form.Group>
-              <Form.Label>We'd love to hear your thoughts!</Form.Label>
+              <Form.Label>Your Feedback</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={4}
@@ -341,7 +329,7 @@ const SidebarFooter = () => {
                 onChange={handleInputChange}
                 isInvalid={!!errors.feedback}
                 disabled={isSubmitting}
-                placeholder="What do you think about our service?"
+                placeholder="Share your thoughts with us..."
                 style={{ resize: 'vertical' }}
               />
               <Form.Control.Feedback type="invalid">
@@ -349,29 +337,20 @@ const SidebarFooter = () => {
               </Form.Control.Feedback>
             </Form.Group>
           </Modal.Body>
-          
+
           <Modal.Footer className="border-0 pt-0 px-4 pb-3">
-            <Button 
-              variant="outline-secondary" 
+            <Button
+              variant="outline-secondary"
               onClick={() => handleModalClose('feedback')}
               disabled={isSubmitting}
               className="px-4"
-              style={{
-                transition: 'all 0.2s ease',
-                minWidth: '100px'
-              }}
             >
               Close
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="btn-submit px-4"
-              disabled={isSubmitting}
-              style={{
-                transition: 'all 0.2s ease',
-                minWidth: '140px',
-                fontWeight: 500
-              }}
+              disabled={isSubmitting || !formData.rating}
             >
               {isSubmitting ? (
                 <>

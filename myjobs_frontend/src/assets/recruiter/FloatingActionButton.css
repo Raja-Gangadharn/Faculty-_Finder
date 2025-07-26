@@ -1,46 +1,125 @@
+/* Main Floating Action Button */
 .fab-btn {
   position: fixed;
   bottom: 10px;
   right: 10px;
   width: 50px;
   height: 50px;
-  background-color: #198754 ;
+  background-color: #198754;
   color: #fff;
   z-index: 1080;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   font-size: 1rem;
-  transition: background-color 0.3s ease, transform 0.2s;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .fab-btn:hover {
   background-color: #146c43;
+  color: #fff;
   transform: translateY(-2px);
 }
+
 .fab-btn svg {
   width: 20px;
   height: 20px;
-  flex-shrink: 0; /* Prevent icon from shrinking */
+  flex-shrink: 0;
 }
 
-.fab-label {
-  margin-left: 5px;
-  font-weight: 600;
+/* Sub Buttons Container */
+.fab-sub-buttons {
+  position: fixed;
+  bottom: 70px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1079;
 }
 
-/* Modal backdrop uses blur */
+.fab-sub-buttons.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Individual Sub Buttons */
+.fab-sub-btn {
+  width: 45px;
+  height: 45px;
+  background-color: #cbd4d0c4;
+  border: none;
+  border-radius: 50%;
+  color: rgb(91, 89, 89);
+  font-size: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  animation: fadeInUp 0.3s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fab-sub-btn:hover {
+  background-color: #198754;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.fab-sub-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Modal Styles */
 .fab-backdrop {
   backdrop-filter: blur(5px);
   background-color: rgba(0, 0, 0, 0.3);
 }
 
-/* Remove border radius for a cleaner card look */
 .fab-modal-dialog .modal-content {
   border-radius: 0.75rem;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-/* Blur entire page when modal is open */
+/* Blur effect when modal is open */
 body.fab-modal-open main,
 body.fab-modal-open .main-content,
 body.fab-modal-open .dashboard-wrapper {
   filter: blur(4px);
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+  
+  .modal-content {
+    border-radius: 8px;
+  }
 }

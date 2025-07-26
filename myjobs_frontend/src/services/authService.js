@@ -114,7 +114,11 @@ export const loginUser = async (email, password) => {
       password
     });
 
-    const { user, token } = response.data;
+    const { token, user } = response.data;
+
+    if (!token || !user) {
+      throw new Error('Invalid response from server');
+    }
 
     // Store tokens and user data in localStorage
     localStorage.setItem('access_token', token.access);

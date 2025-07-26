@@ -83,7 +83,7 @@ const Sidebar = ({ onLinkClick, isOpen, onClose }) => {
                 <FaTimes size={20} />
               </button>
             </div>
-            <div className="sidebar-menu">
+            <div className="faculty-sidebar-menu">
               <Nav className="flex-column w-100">
                 {menuItems.map((item) => (
                   <Nav.Link

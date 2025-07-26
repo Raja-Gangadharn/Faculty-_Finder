@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Row, Col, Table, Alert } from 'react-bootstrap';
-import { FaPlusCircle } from 'react-icons/fa';
 import { Modal } from 'react-bootstrap';
+import { Card, Form, Button, Row, Col, Table, Alert, Badge } from 'react-bootstrap';
+import { FaPlusCircle, FaTrash ,FaBriefcase, FaMapMarkerAlt, FaMoneyBillWave, FaCalendarAlt } from 'react-icons/fa';
+import { BsCardChecklist } from 'react-icons/bs';
+import { motion } from 'framer-motion';
+import './recruiter.css';
+
 
 const PostJob = () => {
   const [formData, setFormData] = useState({
@@ -34,21 +38,21 @@ const PostJob = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const form = e.currentTarget;
-  
+
     if (!form.checkValidity()) {
       e.stopPropagation();
       setValidated(true);
       return;
     }
-  
+
     const newJob = {
       id: crypto.randomUUID(),
       ...formData,
       postedAt: new Date(),
     };
-  
+
     setJobs((prev) => [newJob, ...prev]);
-  
+
     setFormData({
       title: '',
       description: '',
@@ -61,7 +65,7 @@ const PostJob = () => {
       deadline: '',
       pdf: null,
     });
-  
+
     setValidated(false); // reset validation state
     setShowAlert({
       show: true,
@@ -100,10 +104,17 @@ const PostJob = () => {
   };
 
   return (
-    <div>
-      <h3 className="mb-4 text-success d-flex align-items-center">
-        <FaPlusCircle className="me-2" /> Post a New Job
-      </h3>
+    <div className="post-job-container">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3 className="mb-0 text-success d-flex align-items-center">
+          <FaPlusCircle className="me-2" /> Post a New Job
+        </h3>
+        {jobs.length > 0 && (
+          <Badge bg="light" text="dark" className="fs-6 p-2">
+            {jobs.length} {jobs.length === 1 ? 'Job Posted' : 'Jobs Posted'}
+          </Badge>
+        )}
+      </div>
 
       {showAlert.show && (
         <Alert variant={showAlert.variant} onClose={() => setShowAlert({ ...showAlert, show: false })} dismissible>
@@ -127,75 +138,103 @@ const PostJob = () => {
         </Modal.Footer>
       </Modal>
 
-      <Card className="mb-5 shadow-sm">
-        <Card.Body>
+      <Card className="mb-4 shadow-sm border-0">
+        <Card.Body className="p-4">
+          <h5 className="mb-4 text-muted">Job Details</h5>
           <Form noValidate validated={validated} onSubmit={handleSubmit}>
-            <Row className="mb-3">
+            <Row className="mb-3 g-3">
               <Form.Group as={Col} md="6" controlId="jobTitle">
-                <Form.Label>Job Title *</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="Enter job title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Job title is required.
-                </Form.Control.Feedback>
+                <Form.Label className="fw-medium">
+                  <FaBriefcase className="me-2 text-muted" />
+                  Job Title *
+                </Form.Label>
+                <div className="form-icon-wrapper">
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="e.g., Professor in Computer Science"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    className="py-2 ps-4"
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Job title is required.
+                  </Form.Control.Feedback>
+                </div>
               </Form.Group>
 
               <Form.Group as={Col} md="6" controlId="salaryRange">
-                <Form.Label>Salary Range *</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="e.g., $60,000 - $80,000"
-                  name="salary"
-                  value={formData.salary}
-                  onChange={handleChange}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Salary range is required.
-                </Form.Control.Feedback>
+                <Form.Label className="fw-medium">
+                  <FaMoneyBillWave className="me-2 text-muted" />
+                  Salary Range *
+                </Form.Label>
+                <div className="form-icon-wrapper">
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="e.g., ₹8,00,000 - ₹12,00,000"
+                    name="salary"
+                    value={formData.salary}
+                    onChange={handleChange}
+                    className="py-2 ps-4"
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Salary range is required.
+                  </Form.Control.Feedback>
+                </div>
               </Form.Group>
             </Row>
 
-            <Row className="mb-3">
+            <Row className="mb-3 g-3">
               <Form.Group as={Col} md="6" controlId="location">
-                <Form.Label>Location *</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="City, State / Remote"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Location is required.
-                </Form.Control.Feedback>
+                <Form.Label className="fw-medium">
+                  <FaMapMarkerAlt className="me-2 text-muted" />
+                  Location *
+                </Form.Label>
+                <div className="form-icon-wrapper">
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="e.g., Bangalore, Karnataka / Remote"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="py-2 ps-4"
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Location is required.
+                  </Form.Control.Feedback>
+                </div>
               </Form.Group>
 
               <Form.Group as={Col} md="6" controlId="deadline">
-                <Form.Label>Application Deadline *</Form.Label>
-                <Form.Control
-                  required
-                  type="date"
-                  name="deadline"
-                  min={todayISO}
-                  value={formData.deadline}
-                  onChange={handleChange}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Deadline is required.
-                </Form.Control.Feedback>
+                <Form.Label className="fw-medium">
+                  <FaCalendarAlt className="me-2 text-muted" />
+                  Application Deadline *
+                </Form.Label>
+                <div className="form-icon-wrapper">
+                  <Form.Control
+                    required
+                    type="date"
+                    name="deadline"
+                    min={todayISO}
+                    value={formData.deadline}
+                    onChange={handleChange}
+                    className="py-2 ps-4"
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Deadline is required.
+                  </Form.Control.Feedback>
+                </div>
               </Form.Group>
             </Row>
 
             <Form.Group className="mb-3" controlId="description">
-              <Form.Label>Job Description *</Form.Label>
+              <Form.Label className="fw-medium">
+                <BsCardChecklist className="me-2 text-muted" />
+                Job Description *
+              </Form.Label>
               <Form.Control
                 required
                 as="textarea"
@@ -285,9 +324,20 @@ const PostJob = () => {
               />
             </Form.Group>
 
-            <Button variant="success" type="submit">
-              Submit Job
-            </Button>
+            <motion.div
+              className="d-flex justify-content-end mt-4"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Button
+                variant="success"
+                type="submit"
+                className="px-4 py-2 fw-medium"
+              >
+                <FaPlusCircle className="me-2" />
+                Post Job
+              </Button>
+            </motion.div>
           </Form>
         </Card.Body>
       </Card>
@@ -296,47 +346,76 @@ const PostJob = () => {
       {jobs.length === 0 ? (
         <p className="text-muted">No jobs posted yet.</p>
       ) : (
-        <Card className="shadow-sm">
-          <Card.Body className="p-0">
-            <Table responsive hover className="mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Job Title</th>
-                  <th>Posted On</th>
-                  <th>Deadline</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((job) => (
-                  <tr key={job.id}>
-                    <td>{job.title}</td>
-                    <td>{new Date(job.postedAt).toLocaleDateString()}</td>
-                    <td>{job.deadline || '-'}</td>
-                    <td>
-                      <span
-                        className={`badge bg-${
-                          getStatus(job.deadline) === 'Live' ? 'success' : 'secondary'
-                        }`}
-                      >
-                        {getStatus(job.deadline)}
-                      </span>
-                    </td>
-                    <td>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        onClick={() => handleDeleteClick(job.id)}
-                        title="Delete Job"
-                      >
-                        <i className="bi bi-trash"></i>
-                      </Button>
-                    </td>
+        <Card className="shadow-sm border-0 mt-4">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h5 className="mb-0 text-muted">Posted Jobs</h5>
+              <Badge bg="light" text="dark" className="fs-6 p-2">
+                Showing {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
+              </Badge>
+            </div>
+            <div className="table-responsive">
+              <Table hover className="align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th>JOB TITLE</th>
+                    <th>LOCATION</th>
+                    <th>SALARY</th>
+                    <th>DEADLINE</th>
+                    <th>STATUS</th>
+                    <th className="text-end">ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {jobs.map((job) => (
+                    <motion.tr
+                      key={job.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="position-relative"
+                    >
+                      <td className="fw-medium">{job.title}</td>
+                      <td>
+                        <div className="d-flex align-items-center text-muted">
+                          <FaMapMarkerAlt className="me-1" size={12} />
+                          {job.location}
+                        </div>
+                      </td>
+                      <td className="text-nowrap">{job.salary}</td>
+                      <td className="text-nowrap">
+                        <div className="d-flex align-items-center">
+                          <FaCalendarAlt className="me-1 text-muted" size={12} />
+                          {new Date(job.deadline).toLocaleDateString('en-IN')}
+                        </div>
+                      </td>
+                      <td>
+                        <Badge
+                          bg={getStatus(job.deadline) === 'Live' ? 'success' : 'danger'}
+                          className="d-inline-flex align-items-center"
+                        >
+                          {getStatus(job.deadline) === 'Live' ? (
+                            <span className="dot bg-white me-1"></span>
+                          ) : null}
+                          {getStatus(job.deadline)}
+                        </Badge>
+                      </td>
+                      <td className="text-end">
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleDeleteClick(job.id)}
+                          className="p-1"
+                          title="Delete Job"
+                        >
+                          <FaTrash size={14} />
+                        </Button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
           </Card.Body>
         </Card>
       )}

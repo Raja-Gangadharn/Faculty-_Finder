@@ -39,7 +39,7 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
           >
             <FaBars size={24} className="text-success" />
           </button>
-          <Navbar.Brand as={Link} to="/recruiter/dashboard" className="es_mg_lft text-success fw-bold" style={{ marginLeft: brandOffset }}>
+          <Navbar.Brand as={Link} to="/recruiter/dashboard" className="es_mg_lft text-success fw-bold text-decoration-none" style={{ marginLeft: brandOffset }}>
             FacultyFinder
           </Navbar.Brand>
         </div>

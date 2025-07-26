@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Row,
   Col,
@@ -11,8 +12,10 @@ import {
   Dropdown,
   ButtonGroup,
 } from "react-bootstrap";
-import { AiOutlineSearch } from "react-icons/ai";
-import { BsFilter, BsArrowClockwise } from "react-icons/bs";
+import { AiOutlineSearch, AiOutlineHeart, AiFillHeart } from "react-icons/ai";
+import { BsFilter, BsArrowClockwise, BsBookmarkCheckFill, BsBookmarkPlus } from "react-icons/bs";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 // -------------------------------------------------------------
 // Temporary mock data – Replace with real API data in the future
@@ -48,11 +51,11 @@ const mockFaculty = [
       { label: "Ph.D", type: "primary" },
       { label: "M.E", type: "info" },
     ],
-    degreeCredits: 150,
+    degreeCredits: 10,
     saved: true,
   },
   {
-    id: 1,
+    id: 3,
     initials: "JD",
     name: "Dr. Gangadharan",
     email: "john.doe@example.com",
@@ -69,7 +72,7 @@ const mockFaculty = [
   },
 
   {
-    id: 2,
+    id: 4,
     initials: "SJ",
     name: "Dr. Yogesh",
     email: "sarah.j@example.com",
@@ -87,7 +90,7 @@ const mockFaculty = [
   },
 
   {
-    id: 1,
+    id: 5,
     initials: "JD",
     name: "Dr. Gangadharan",
     email: "john.doe@example.com",
@@ -104,7 +107,7 @@ const mockFaculty = [
   },
 
   {
-    id: 2,
+    id: 6,
     initials: "SJ",
     name: "Dr. Yogesh",
     email: "sarah.j@example.com",
@@ -142,6 +145,7 @@ const degreeOptions = ["Any Degree", "Ph.D", "M.Tech", "M.E", "B.Tech"];
 // -------------------------------------------------------------
 const SearchFaculty = () => {
   /* --------------------------- Component State --------------------------- */
+  const navigate = useNavigate();
   const [faculty, setFaculty] = useState(mockFaculty);
   const [department, setDepartment] = useState("All Departments");
   const [course, setCourse] = useState("All Courses");
@@ -183,8 +187,12 @@ const SearchFaculty = () => {
   const handlePageChange = (page) => setCurrentPage(page);
 
   const toggleSave = (id) => {
-    setFaculty((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, saved: !f.saved } : f))
+    setFaculty(prevFaculty => 
+      prevFaculty.map(faculty => 
+        faculty.id === id 
+          ? { ...faculty, saved: !faculty.saved } 
+          : faculty
+      )
     );
   };
 
@@ -260,22 +268,11 @@ const SearchFaculty = () => {
       <Card className="shadow-sm">
         <Card.Header className="bg-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0 fw-semibold">Search Results</h5>
-          <div className="d-flex gap-2">
-            <Button variant="outline-secondary" size="sm">
-              Export
-            </Button>
-            <Button variant="outline-primary" size="sm">
-              Contact
-            </Button>
-          </div>
         </Card.Header>
         <Card.Body className="p-0">
           <Table responsive hover className="mb-0">
             <thead className="table-light">
               <tr>
-                <th style={{ width: 40 }}>
-                  <Form.Check type="checkbox" />
-                </th>
                 <th>Faculty Name</th>
                 <th>Department</th>
                 <th>Experience</th>
@@ -295,16 +292,20 @@ const SearchFaculty = () => {
               ) : (
                 paginated.map((f) => (
                   <tr key={f.id}>
-                    <td>
-                      <Form.Check type="checkbox" />
-                    </td>
+                    
                     <td>
                       <div className="d-flex align-items-center gap-2">
                         <div className="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }}>
                           {f.initials}
                         </div>
                         <div>
-                          <div className="fw-semibold">{f.name}</div>
+                          <div 
+                            className="fw-semibold text-primary" 
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => navigate(`/recruiter/faculty/${f.facultyId}`)}
+                          >
+                            {f.name}
+                          </div>
                           <small className="text-muted">{f.email}</small>
                         </div>
                       </div>
@@ -332,25 +333,49 @@ const SearchFaculty = () => {
                     <td>{f.degreeCredits}</td>
                     <td className="text-end">
                       <div className="d-inline-flex align-items-center justify-content-end gap-2">
-                        <Button variant="outline-primary" size="sm">
-                          Contact
-                        </Button>
-                        <Button
-                          variant={f.saved ? "success" : "outline-success"}
-                          size="sm"
-                          onClick={() => toggleSave(f.id)}
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          {f.saved ? "Unsave" : "Save"}
+                          <Button
+                            variant={f.saved ? "outline-success" : "outline-secondary"}
+                            size="sm"
+                            onClick={() => toggleSave(f.id)}
+                            title={f.saved ? "Unsave" : "Save"}
+                            className="d-flex align-items-center justify-content-center p-0"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              border: 'none',
+                              backgroundColor: 'transparent',
+                              color: f.saved ? '#198754' : '#6c757d'
+                            }}
+                          >
+                            <AnimatePresence mode="wait">
+                              <motion.span
+                                key={f.saved ? 'saved' : 'unsaved'}
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 1.5, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {f.saved ? (
+                                  <BsBookmarkCheckFill size={18} />
+                                ) : (
+                                  <BsBookmarkPlus size={18} />
+                                )}
+                              </motion.span>
+                            </AnimatePresence>
+                          </Button>
+                        </motion.div>
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => navigate(`/recruiter/faculty/${f.facultyId || f.id}`)}
+                          title="View Profile"
+                        >
+                          View
                         </Button>
-                        <Dropdown as={ButtonGroup} align="end">
-                          <Dropdown.Toggle size="sm" variant="outline-secondary">
-                            •••
-                          </Dropdown.Toggle>
-                          <Dropdown.Menu>
-                            <Dropdown.Item>View profile</Dropdown.Item>
-                            <Dropdown.Item>Report</Dropdown.Item>
-                          </Dropdown.Menu>
-                        </Dropdown>
                       </div>
                     </td>
                   </tr>

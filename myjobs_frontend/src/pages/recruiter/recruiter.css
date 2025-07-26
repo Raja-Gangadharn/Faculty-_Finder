@@ -1,4 +1,6 @@
-/* Base Styles */
+/* ======================
+   BASE STYLES & VARIABLES
+   ====================== */
 :root {
   --primary: #28a745;
   --primary-light: #e7f7ec;
@@ -14,7 +16,9 @@
   --transition: all 0.3s ease;
 }
 
-/* Dashboard Layout */
+/* ======================
+   DASHBOARD LAYOUT
+   ====================== */
 .dashboard-wrapper {
   display: flex;
   min-height: 100vh;
@@ -32,7 +36,9 @@
   margin-left: 70px;
 }
 
-/* Stats Cards */
+/* ======================
+   STATS CARDS
+   ====================== */
 .stat-card {
   border: none;
   border-radius: var(--border-radius);
@@ -62,7 +68,9 @@
   border-left-color: var(--info);
 }
 
-/* Activity Feed */
+/* ======================
+   ACTIVITY FEED
+   ====================== */
 .activity-item {
   position: relative;
   padding-left: 2rem;
@@ -86,7 +94,9 @@
   border: 2px solid white;
 }
 
-/* Candidate Cards */
+/* ======================
+   CANDIDATE CARDS
+   ====================== */
 .candidate-card {
   transition: var(--transition);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -149,7 +159,9 @@
   border-color: #edf2f7;
 }
 
-/* Cards */
+/* ======================
+   CARDS
+   ====================== */
 .card {
   border: none;
   border-radius: var(--border-radius);
@@ -169,7 +181,9 @@
   font-weight: 600;
 }
 
-/* Avatar */
+/* ======================
+   AVATARS
+   ====================== */
 .avatar {
   display: inline-flex;
   align-items: center;
@@ -240,7 +254,9 @@
   background: #a8a8a8;
 }
 
-/* Login/Signup specific styles */
+/* ======================
+   LOGIN/SIGNUP
+   ====================== */
 /* ===== Base Styles ===== */
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -312,7 +328,9 @@ body {
   background-color: #f8f9fa;
 }
 
-/* Sidebar */
+/* ======================
+   SIDEBAR
+   ====================== */
 .sidebar {
   width: 250px;
   background: #fff;
@@ -357,7 +375,9 @@ body {
   font-size: 1.25rem;
 }
 
-/* Main Content */
+/* ======================
+   MAIN CONTENT
+   ====================== */
 .main-content {
   flex: 1;
   display: flex;
@@ -371,7 +391,9 @@ body {
   margin-left: 70px;
 }
 
-/* Header */
+/* ======================
+   HEADER
+   ====================== */
 .dashboard-header {
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -379,14 +401,18 @@ body {
   padding: 0.75rem 1.5rem;
 }
 
-/* Content Area */
+/* ======================
+   CONTENT AREA
+   ====================== */
 .content-wrapper {
   flex: 1;
   padding: 1.5rem;
   background-color: #f8f9fa;
 }
 
-/* Cards */
+/* ======================
+   CARDS
+   ====================== */
 .card {
   border: none;
   border-radius: 0.5rem;

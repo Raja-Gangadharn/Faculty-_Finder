@@ -14,10 +14,11 @@ import RecruiterDashboard from "../pages/recruiter/RecruiterDashboard";
 import PostJob from "../pages/recruiter/PostJob";
 import SavedProfiles from "../pages/recruiter/SavedProfiles";
 import MarkedProfiles from "../pages/recruiter/MarkedProfiles";
-import ContactUs from "../pages/recruiter/ContactUs";
-import Feedback from "../pages/recruiter/Feedback";
+// import ContactUs from "../pages/recruiter/ContactUs";
+// import Feedback from "../pages/recruiter/Feedback";
 import RecruiterRegistration from "../pages/recruiter/RecruiterRegistration";
 import SearchFaculty from "../pages/recruiter/SearchFaculty";
+import FacultyDetails from "../pages/recruiter/FacultyDetails";
 import FacultyLayout from "../layouts/FacultyLayout";
 import RecruiterLayout from "../layouts/RecruiterLayout";
 
@@ -41,7 +42,7 @@ const PrivateRoute = ({ children }) => {
   return children;
 };
 
-const RecruiterPrivateRoute = ({ children }) => {
+const RecruiterPrivateRoute = () => {
   const { isAuthenticated, isRecruiter, isLoading } = useContext(AuthContext);
 
   if (isLoading) {
@@ -58,7 +59,7 @@ const RecruiterPrivateRoute = ({ children }) => {
     return <Navigate to="/recruiter/login" replace />;
   }
 
-  return children || <Outlet />;
+  return <Outlet />;
 };
 
 export const AppRoutes = () => {
@@ -91,21 +92,27 @@ export const AppRoutes = () => {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="profile/edit" element={<ProfilePage />} />
         <Route path="applications" element={<Applications />} />
-        <Route path="jobs" element={<JobOpportunities />} />
-        <Route path="jobs/:id" element={<JobDetails />} />
+        <Route path="jobs">
+          <Route index element={<JobOpportunities />} />
+          <Route path=":id" element={<JobDetails />} />
+        </Route>
       </Route>
       {/* Recruiter Auth Routes */}
       <Route path="/recruiter/login" element={<RecruiterLogin />} />
       <Route path="/recruiter/registration" element={<RecruiterRegistration />} />
 
-      <Route path="/recruiter" element={<RecruiterLayout />}>
+      <Route element={<RecruiterPrivateRoute />}>
+        <Route path="/recruiter" element={<RecruiterLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<RecruiterDashboard />} />
         <Route path="post-job" element={<PostJob />} />
         <Route path="saved-profiles" element={<SavedProfiles />} />
         <Route path="marked-profiles" element={<MarkedProfiles />} />
-        <Route path="contact-us" element={<ContactUs />} />
-        <Route path="feedback" element={<Feedback />} />
-        <Route path="search-faculty" element={<SearchFaculty />} />
+        <Route path="faculty/:facultyId" element={<FacultyDetails />} />
+        {/* <Route path="contact-us" element={<ContactUs />} />
+        <Route path="feedback" element={<Feedback />} /> */}
+          <Route path="search-faculty" element={<SearchFaculty />} />
+        </Route>
       </Route>
 
       {/* 404 Route */}
