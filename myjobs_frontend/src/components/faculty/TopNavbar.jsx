@@ -83,7 +83,13 @@ const TopNavbar = ({ onToggleSidebar }) => {
   const userInitials = `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
 
   return (
-    <Navbar bg={isDarkMode ? 'dark' : 'light'} variant={isDarkMode ? 'dark' : 'light'} expand="lg" className="top-navbar">
+    <Navbar 
+      bg={isDarkMode ? 'dark' : 'light'} 
+      variant={isDarkMode ? 'dark' : 'light'} 
+      expand="lg" 
+      className="top-navbar"
+      fixed="top"
+    >
       <Container fluid>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">

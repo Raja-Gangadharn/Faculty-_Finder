@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Navbar, Nav, Container, Dropdown, Image } from 'react-bootstrap';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Navbar, Nav, Container, Dropdown, Image, ListGroup, Button } from 'react-bootstrap';
 import { 
   FaBell, 
   FaEnvelope, 
   FaUser, 
   FaBars, 
   FaChevronDown,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaCheck,
+  FaBellSlash,
+  FaCheckCircle,
+  FaRegBell,
+  FaEllipsisH
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
@@ -18,6 +23,22 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
 
   // Track viewport width so we only offset brand on larger screens
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    // Notification state
+  const [notifications, setNotifications] = useState(() => 
+    Array.from({ length: 20 }).map((_, i) => ({
+      id: i + 1,
+      text: `New faculty profile matches your criteria #${i + 1}`,
+      time: `${i + 1}m ago`,
+      read: i >= 5, // First 5 are unread
+      type: i % 3 === 0 ? 'match' : (i % 3 === 1 ? 'message' : 'alert')
+    }))
+  );
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -45,7 +66,7 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
         </div>
        
 
-        {/* <div className="d-none d-lg-block flex-grow-1 mx-4">
+        {/* {<div className="d-none d-lg-block flex-grow-1 mx-4">
           <div className="search-bar">
             <div className="input-group">
               <input 
@@ -58,16 +79,111 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
               </button>
             </div>
           </div>
-        </div> */}
+        </div> } */}
 
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
           <Nav className="align-items-center">
-            <Nav.Link className="position-relative me-3">
-              <FaBell size={20} className="text-muted" />
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">
-                3
-              </span>
-            </Nav.Link>
+            <Dropdown as="div" className="position-relative d-inline-block" align="end" autoClose="outside">
+              <Dropdown.Toggle 
+                as={Nav.Link} 
+                className="position-relative p-0 me-3"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <FaBell size={20} className={unreadCount > 0 ? 'text-success' : 'text-muted'} />
+                {unreadCount > 0 && (
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25rem 0.35rem' }}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu 
+                show={showNotifications}
+                className="dropdown-menu-end notification-dropdown shadow-lg border-0"
+                style={{ width: '350px', maxHeight: '500px', overflow: 'hidden' }}
+              >
+                <div className="d-flex justify-content-between align-items-center p-3 border-bottom">
+                  <h6 className="mb-0 fw-bold">Notifications</h6>
+                  <div>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="text-muted p-0 me-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Mark all as read
+                        setNotifications(prev => 
+                          prev.map(n => (n.read ? n : { ...n, read: true }))
+                        );
+                      }}
+                    >
+                      <FaCheckCircle className="me-1" /> Mark all as read
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="notification-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  {notifications.length > 0 ? (
+                    <ListGroup variant="flush">
+                      {notifications.slice(0, 10).map((notification) => (
+                        <ListGroup.Item 
+                          key={notification.id}
+                          className={`border-0 py-3 px-3 ${!notification.read ? 'bg-light' : ''}`}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            // Mark as read when clicked
+                            if (!notification.read) {
+                              setNotifications(prev => 
+                                prev.map(n => 
+                                  n.id === notification.id ? { ...n, read: true } : n
+                                )
+                              );
+                            }
+                            // Handle notification click (e.g., navigate to relevant page)
+                          }}
+                        >
+                          <div className="d-flex">
+                            <div className="flex-shrink-0 me-3">
+                              <div className={`avatar-sm ${notification.type === 'match' ? 'bg-success' : notification.type === 'message' ? 'bg-primary' : 'bg-warning'} text-white rounded-circle d-flex align-items-center justify-content-center`}>
+                                {notification.type === 'match' ? (
+                                  <FaUser size={12} />
+                                ) : notification.type === 'message' ? (
+                                  <FaEnvelope size={12} />
+                                ) : (
+                                  <FaBell size={12} />
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-grow-1">
+                              <div className="d-flex justify-content-between">
+                                <p className="mb-1 text-dark">{notification.text}</p>
+                                {!notification.read && (
+                                  <span className="d-inline-block rounded-circle bg-success" style={{ width: '8px', height: '8px' }} />
+                                )}
+                              </div>
+                              <small className="text-muted">{notification.time}</small>
+                            </div>
+                          </div>
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  ) : (
+                    <div className="text-center p-4">
+                      <FaBellSlash size={32} className="text-muted mb-2" />
+                      <p className="text-muted mb-0">No new notifications</p>
+                    </div>
+                  )}
+                </div>
+
+                {notifications.length > 10 && (
+                  <div className="text-center p-2 border-top">
+                    <Button variant="link" size="sm" className="text-success">
+                      View All Notifications
+                    </Button>
+                  </div>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
             <Nav.Link className="position-relative me-3">
               <FaEnvelope size={20} className="text-muted" />
               <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">
@@ -99,15 +215,9 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
                   <h6 className="mb-0">{`${firstName || ''} ${lastName || ''}`.trim() || 'User'}</h6>
                   <small className="text-muted">{email || ''}</small>
                 </div>
-                <Dropdown.Item as={Link} to="/recruiter/profile" className="py-2">
-                  <FaUser className="me-2 text-muted" /> My Profile
-                </Dropdown.Item>
-                <Dropdown.Item as={Link} to="/recruiter/settings" className="py-2">
-                  <i className="bi bi-gear me-2"></i> Settings
-                </Dropdown.Item>
                 <Dropdown.Divider />
                 <Dropdown.Item 
-                  className="text-danger py-2"
+                  className="text-danger py-2 text-decoration-none"
                   onClick={logout}
                 >
                   <FaSignOutAlt className="me-2" /> Logout

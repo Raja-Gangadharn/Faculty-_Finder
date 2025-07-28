@@ -73,7 +73,8 @@ const recentActivities = [
   { id: 2, title: "Interview Scheduled", description: "Technical interview with Sarah Williams at 2:30 PM", time: "1 hour ago", type: "interview" },
   { id: 3, title: "New Message", description: "You have a new message from hiring manager", time: "2 hours ago", type: "message" },
   { id: 4, title: "Job Posted", description: "Your job posting for Frontend Developer is now live", time: "5 hours ago", type: "job" },
-  { id: 5, title: "Candidate Update", description: "Michael Brown accepted your offer", time: "1 day ago", type: "update" }
+  { id: 5, title: "Candidate Update", description: "Michael Brown accepted your offer", time: "1 day ago", type: "update" },
+  { id: 6, title: "New Message", description: "You have a new message from hiring manager", time: "2 hours ago", type: "message" }
 ];
 
 const topCandidates = [
@@ -115,26 +116,29 @@ const RecruiterDashboard = () => {
   };
 
   return (
-    <Container fluid className="py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="mb-1">Welcome to faculty finder</h2>
+    <Container fluid className="py-3 py-md-4">
+      {/* Responsive Header */}
+      <div className="dashboard-header">
+        <div className="mb-3 mb-md-0">
+          <h2 className="mb-1">Welcome to Faculty Finder</h2>
           <p className="text-muted mb-0">Welcome back! Here's what's happening with your recruitment.</p>
         </div>
-        <div>
-          <Link to="/recruiter/post-job" variant="success" className="me-2 btn btn-success text-decoration-none">
-            <FaPlus className="me-2" /> Post New Job
+        <div className="d-flex flex-wrap gap-2 justify-content-end">
+          <Link to="/recruiter/post-job" variant="success" className="btn btn-success text-decoration-none">
+            <FaPlus className="me-1 me-md-2" /> 
+            <span className="d-none d-md-inline">Post New Job</span>
           </Link>
           <Link to="#" variant="outline-secondary" className="btn btn-outline-secondary text-decoration-none">
-            <FaChartLine className="me-2" /> View Reports
+            <FaChartLine className="me-1 me-md-2" /> 
+            <span className="d-none d-md-inline">View Reports</span>
           </Link>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <Row className="mb-4">
+      <Row className="g-3 mb-4">
         {statsData.map((stat) => (
-          <Col key={stat.id} xs={12} sm={6} xl={3} className="mb-4 mb-xl-0">
+          <Col key={stat.id} xs={12} sm={6} lg={3} className="d-flex">
             <Card className="h-100 shadow-sm">
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center">
@@ -156,8 +160,8 @@ const RecruiterDashboard = () => {
       </Row>
 
       {/* Profile Completion & Recruiter Info */}
-      <Row className="mb-4">
-        <Col md={8}>
+      <Row className="g-3 mb-4">
+        <Col xs={12} lg={8}>
           <Card className="h-100">
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center mb-3">
@@ -175,7 +179,7 @@ const RecruiterDashboard = () => {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={4}>
+        <Col xs={12} lg={4}>
           <Card className="h-100">
             <Card.Body className="d-flex flex-column justify-content-center">
               <div className="text-center mb-3">
@@ -202,9 +206,9 @@ const RecruiterDashboard = () => {
         </Col>
       </Row>
 
-      <Row>
+      <Row className="g-3">
         {/* Recent Activities */}
-        <Col lg={8}>
+        <Col xs={12} lg={8}>
           <Card className="h-100 shadow-sm">
             <Card.Header className="bg-white border-bottom-0 pb-0">
               <h5 className="mb-0">Recent Activities</h5>
@@ -232,15 +236,12 @@ const RecruiterDashboard = () => {
               </div>
             </Card.Body>
             <Card.Footer className="bg-white border-top-0 pt-0">
-              <Button variant="link" className="text-decoration-none p-0">
-                View All Activities <FaArrowRight className="ms-1" size={12} />
-              </Button>
             </Card.Footer>
           </Card>
         </Col>
 
         {/* Top Candidates */}
-        <Col lg={4}>
+        <Col xs={12} lg={4}>
           <Card className="h-100 shadow-sm">
             <Card.Header className="bg-white border-bottom-0 pb-0">
               <h5 className="mb-0">Top Candidates</h5>
@@ -273,7 +274,7 @@ const RecruiterDashboard = () => {
               </div>
             </Card.Body>
             <Card.Footer className="bg-white border-top-0 pt-0">
-              <Button variant="link" className="text-decoration-none p-0">
+              <Button variant="link" className="text-decoration-none p-0 text-success">
                 View All Candidates <FaArrowRight className="ms-1" size={12} />
               </Button>
             </Card.Footer>
@@ -286,14 +287,16 @@ const RecruiterDashboard = () => {
         <Col xs={12}>
           <Card className="shadow-sm">
             <Card.Header className="bg-white border-bottom-0 pb-0">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Upcoming Interviews</h5>
-                <div className="d-flex align-items-center">
-                  <Badge bg="light" text="dark" className="rounded-pill me-2">
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                <h5 className="mb-2 mb-md-0">Upcoming Interviews</h5>
+                <div className="d-flex flex-wrap gap-2">
+                  <Badge bg="light" text="dark" className="rounded-pill align-self-center">
                     <FaCalendarAlt className="me-1" /> This Week
                   </Badge>
-                  <Button variant="outline-primary" size="sm">
-                    <FaPlus className="me-1" /> Schedule New
+                  <Button variant="outline-success" size="sm" className="mt-2 mt-md-0">
+                    <FaPlus className="me-1" /> 
+                    <span className="d-none d-sm-inline">Schedule New</span>
+                    <span className="d-inline d-sm-none">New</span>
                   </Button>
                 </div>
               </div>

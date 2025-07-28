@@ -17,6 +17,10 @@ const FacultyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [faculty, setFaculty] = useState(null);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showMarkConfirm, setShowMarkConfirm] = useState(false);
+  const [isProfileSaved, setIsProfileSaved] = useState(false);
+  const [isProfileMarked, setIsProfileMarked] = useState(false);
 
   useEffect(() => {
     // Mock faculty data
@@ -94,16 +98,96 @@ const FacultyDetails = () => {
 
   return (
     <Container className="faculty-details-container py-4">
-      <a 
-        href="#" 
-        className="btn-back"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate(-1);
-        }}
-      >
-        <FaArrowLeft /> Back to Results
-      </a>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <a 
+          href="#" 
+          className="btn btn-outline-success text-decoration-none"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate(-1);
+          }}
+        >
+          <FaArrowLeft className="me-1" /> Back to Results
+        </a>
+        <div className="d-flex gap-2">
+          <button 
+            className={`btn ${isProfileSaved ? 'btn-success' : 'btn-outline-primary'}`}
+            onClick={() => isProfileSaved ? null : setShowSaveConfirm(true)}
+            disabled={isProfileSaved}
+          >
+            {isProfileSaved ? 'Profile Saved' : 'Save Profile'}
+          </button>
+          <button 
+            className={`btn ${isProfileMarked ? 'btn-danger' : 'btn-outline-danger'}`}
+            onClick={() => isProfileMarked ? null : setShowMarkConfirm(true)}
+            disabled={isProfileMarked}
+          >
+            {isProfileMarked ? 'Profile Marked' : 'Mark Profile'}
+          </button>
+        </div>
+      </div>
+
+      {/* Save Profile Confirmation Modal */}
+      {showSaveConfirm && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Save</h5>
+                <button type="button" className="btn-close" onClick={() => setShowSaveConfirm(false)}></button>
+              </div>
+              <div className="modal-body">
+                Are you sure you want to save this faculty profile for future reference?
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowSaveConfirm(false)}>Cancel</button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setIsProfileSaved(true);
+                    setShowSaveConfirm(false);
+                    // Here you would typically make an API call to save the profile
+                  }}
+                >
+                  Yes, Save Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mark Profile Confirmation Modal */}
+      {showMarkConfirm && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Mark</h5>
+                <button type="button" className="btn-close" onClick={() => setShowMarkConfirm(false)}></button>
+              </div>
+              <div className="modal-body">
+                Are you sure you want to mark this faculty profile for further action?
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowMarkConfirm(false)}>Cancel</button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger"
+                  onClick={() => {
+                    setIsProfileMarked(true);
+                    setShowMarkConfirm(false);
+                    // Here you would typically make an API call to mark the profile
+                  }}
+                >
+                  Yes, Mark Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Card className="shadow-sm mb-4 profile-header">
         <Card.Body className="p-4">

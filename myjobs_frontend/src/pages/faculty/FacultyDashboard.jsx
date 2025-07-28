@@ -254,7 +254,7 @@ const FacultyDashboard = () => {
                 </div>
               </div>
 
-              <div className="border-top pt-3 mt-3">
+              <div className="border-top pt-3 mt-2">
                 <h5 className="mb-3">Contact Information</h5>
                 <Row className="g-3">
                   <Col md={6}>
@@ -348,7 +348,6 @@ const FacultyDashboard = () => {
                 </button>
                 <button 
                   className="list-group-item list-group-item-action"
-                  onClick={() => navigate('/faculty/settings')}
                 >
                   Account Settings
                 </button>

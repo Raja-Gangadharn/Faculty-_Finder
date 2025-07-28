@@ -1,14 +1,20 @@
 /* Top Navigation Bar Styles */
-.faculty-portal .top-navbar {
+.top-navbar {
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 0.5rem 1rem;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 1020;
+  left: 0;
+  right: 0;
+  z-index: 1030;
   border-bottom: 1px solid #e9ecef;
   transition: background-color 0.3s, border-color 0.3s;
-  margin-left: 0;
+}
+
+/* Add padding to body to prevent content from being hidden under fixed navbar */
+body {
+  padding-top: 60px; /* Adjust this value based on your navbar height */
 }
 
 /* Sidebar toggle button */
@@ -31,6 +37,20 @@
 .faculty-portal.dark-mode .top-navbar {
   background-color: #1a1a2e;
   border-bottom-color: #2d3748;
+}
+
+/* Ensure navbar stays on top of other content */
+.top-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;
+}
+
+/* Adjust main content padding to account for fixed navbar */
+.main-content {
+  padding-top: 70px; /* Adjust this value based on your navbar height */
 }
 
 .faculty-portal.dark-mode .top-navbar .btn-link {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { FaLinkedin, FaTwitter, FaGithub } from 'react-icons/fa';
 import '../../assets/recruiter/Footer.css';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -33,16 +34,16 @@ const Footer = () => {
             <h6 className="text-uppercase fw-bold mb-3">For Recruiters</h6>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <a href="/recruiter/search" className="text-muted text-decoration-none">Search Faculty</a>
+                <Link to="/recruiter/search-faculty" className="text-muted text-decoration-none">Search Faculty</Link>
               </li>
               <li className="mb-2">
-                <a href="/recruiter/saved" className="text-muted text-decoration-none">Saved Profiles</a>
+                <Link to="/recruiter/saved-profiles" className="text-muted text-decoration-none">Saved Profiles</Link>
               </li>
               <li className="mb-2">
-                <a href="/recruiter/analytics" className="text-muted text-decoration-none">Analytics</a>
+                <Link to="#" className="text-muted text-decoration-none">Analytics</Link>
               </li>
               <li>
-                <a href="/recruiter/company" className="text-muted text-decoration-none">Company Profile</a>
+                <Link to="#" className="text-muted text-decoration-none">Company Profile</Link>
               </li>
             </ul>
           </Col>
@@ -51,16 +52,16 @@ const Footer = () => {
             <h6 className="text-uppercase fw-bold mb-3">Resources</h6>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <a href="/blog" className="text-muted text-decoration-none">Blog</a>
+                <a href="#" className="text-muted text-decoration-none">Blog</a>
               </li>
               <li className="mb-2">
-                <a href="/help" className="text-muted text-decoration-none">Help Center</a>
+                <a href="#" className="text-muted text-decoration-none">Help Center</a>
               </li>
               <li className="mb-2">
-                <a href="/webinars" className="text-muted text-decoration-none">Webinars</a>
+                <a href="#" className="text-muted text-decoration-none">Webinars</a>
               </li>
               <li>
-                <a href="/api" className="text-muted text-decoration-none">API</a>
+                <a href="#" className="text-muted text-decoration-none">API</a>
               </li>
             </ul>
           </Col>
@@ -69,16 +70,16 @@ const Footer = () => {
             <h6 className="text-uppercase fw-bold mb-3">Company</h6>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <a href="/about" className="text-muted text-decoration-none">About Us</a>
+                <a href="#" className="text-muted text-decoration-none">About Us</a>
               </li>
               <li className="mb-2">
-                <a href="/careers" className="text-muted text-decoration-none">Careers</a>
+                <a href="#" className="text-muted text-decoration-none">Careers</a>
               </li>
               <li className="mb-2">
-                <a href="/contact" className="text-muted text-decoration-none">Contact</a>
+                <a href="#" className="text-muted text-decoration-none">Contact</a>
               </li>
               <li>
-                <a href="/press" className="text-muted text-decoration-none">Press</a>
+                <a href="#" className="text-muted text-decoration-none">Press</a>
               </li>
             </ul>
           </Col>
@@ -95,19 +96,19 @@ const Footer = () => {
           <Col md={6} className="text-center text-md-end">
             <ul className="list-inline mb-0">
               <li className="list-inline-item">
-                <a href="/privacy" className="text-muted text-decoration-none">Privacy Policy</a>
+                <a href="#" className="text-muted text-decoration-none">Privacy Policy</a>
               </li>
               <li className="list-inline-item">
                 <span className="mx-2 text-muted">•</span>
               </li>
               <li className="list-inline-item">
-                <a href="/terms" className="text-muted text-decoration-none">Terms of Service</a>
+                <a href="#" className="text-muted text-decoration-none">Terms of Service</a>
               </li>
               <li className="list-inline-item">
                 <span className="mx-2 text-muted">•</span>
               </li>
               <li className="list-inline-item">
-                <a href="/cookies" className="text-muted text-decoration-none">Cookie Policy</a>
+                <a href="#" className="text-muted text-decoration-none">Cookie Policy</a>
               </li>
             </ul>
           </Col>
