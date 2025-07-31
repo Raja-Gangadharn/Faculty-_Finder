@@ -114,7 +114,7 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
                         // Mark all as read
                         setNotifications(prev => 
                           prev.map(n => (n.read ? n : { ...n, read: true }))
-                        );
+                        );  
                       }}
                     >
                       <FaCheckCircle className="me-1" /> Mark all as read

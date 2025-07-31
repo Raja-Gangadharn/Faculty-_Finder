@@ -9,8 +9,8 @@ const Footer = () => {
 
   return (
     <footer className="recruiter-footer py-4 bg-white border-top">
-      <Container>
-        <Row className="g-4">
+      <Container fluid>
+        <Row className="p-8">
           <Col lg={4} className="mb-4 mb-lg-0">
             <h5 className="text-success mb-3">Faculty Finder</h5>
             <p className="text-muted mb-3">
