@@ -11,10 +11,12 @@ import {
   FaBellSlash,
   FaCheckCircle,
   FaRegBell,
-  FaEllipsisH
+  FaEllipsisH,
+  FaComments
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import communicationService from '../../services/communicationService';
 import '../../assets/recruiter/TopNavbar.css';
 
 const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
@@ -39,6 +41,13 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
+  const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
+
+  // Load pending invites count
+  useEffect(() => {
+    const count = communicationService.getPendingInvitesCount();
+    setPendingInvitesCount(count);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -66,23 +75,17 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
         </div>
        
 
-        {/* {<div className="d-none d-lg-block flex-grow-1 mx-4">
-          <div className="search-bar">
-            <div className="input-group">
-              <input 
-                type="text" 
-                className="form-control border-end-0" 
-                placeholder="Search faculty, skills, or departments..."
-              />
-              <button className="btn btn-outline-success border-start-0" type="button">
-                <i className="bi bi-search"></i>
-              </button>
-            </div>
-          </div>
-        </div> } */}
-
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
           <Nav className="align-items-center">
+            <Nav.Link as={Link} to="/recruiter/communication" className="position-relative me-3">
+              <FaEnvelope size={20} className="text-success" />
+              {pendingInvitesCount > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25rem 0.35rem' }}>
+                  {pendingInvitesCount > 9 ? '9+' : pendingInvitesCount}
+                </span>
+              )}
+            </Nav.Link>
+
             <Dropdown as="div" className="position-relative d-inline-block" align="end" autoClose="outside">
               <Dropdown.Toggle 
                 as={Nav.Link} 
@@ -184,12 +187,7 @@ const TopNavbar = ({ toggleSidebar, isSidebarOpen }) => {
                 )}
               </Dropdown.Menu>
             </Dropdown>
-            <Nav.Link className="position-relative me-3">
-              <FaEnvelope size={20} className="text-muted" />
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">
-                5
-              </span>
-            </Nav.Link>
+            
             
             <Dropdown align="end" className="ms-2">
               <Dropdown.Toggle 

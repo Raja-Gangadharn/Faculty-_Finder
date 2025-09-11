@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Form, Button, Alert, Row, Col } from 'react-bootstrap';
+import { FaUserGraduate, FaLock, FaFileAlt, FaArrowRight, FaCheck, FaTimes } from 'react-icons/fa';
 import { registerFaculty } from '../../services/authService';
-import { Link, useNavigate } from "react-router-dom";
 import './faculty.css';
 
 const FacultyRegistration = () => {
-
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,203 +18,349 @@ const FacultyRegistration = () => {
     agreeTerms: false,
   });
 
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [fileNames, setFileNames] = useState({
+    resume: 'No file chosen',
+    transcripts: 'No file chosen'
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    if (type === 'file') {
-      setFormData((prev) => ({ ...prev, [name]: files[0] }));
-    } else {
-      setFormData((prev) => ({
+    let newValue;
+    
+    if (type === 'checkbox') {
+      newValue = checked;
+    } else if (type === 'file') {
+      newValue = files[0];
+      // Update file names for display
+      setFileNames(prev => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value,
+        [name]: files[0] ? files[0].name : 'No file chosen'
       }));
+    } else {
+      newValue = value;
     }
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: newValue,
+    }));
   };
 
-  const validate = () => {
-    const newErrors = {};
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required.';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required.';
-    if (!formData.email.trim()) newErrors.email = 'Email is required.';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format.';
-    if (!formData.password) newErrors.password = 'Password is required.';
-    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters.';
-    if (!formData.workPreference) newErrors.workPreference = 'Select a work preference.';
-    if (!formData.resume) newErrors.resume = 'Resume is required.';
-    if (!formData.transcripts) newErrors.transcripts = 'Transcripts are required.';
-    if (!formData.agreeTerms) newErrors.agreeTerms = 'You must agree to the terms.';
-    return newErrors;
+  const validateForm = () => {
+    const errors = [];
+    if (!formData.firstName) errors.push('First name is required');
+    if (!formData.lastName) errors.push('Last name is required');
+    if (!formData.email) {
+      errors.push('Email is required');
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.push('Email is invalid');
+    }
+    if (!formData.password) {
+      errors.push('Password is required');
+    } else if (formData.password.length < 6) {
+      errors.push('Password must be at least 6 characters');
+    }
+    if (!formData.workPreference) errors.push('Work preference is required');
+    if (!formData.resume) errors.push('Resume is required');
+    if (!formData.transcripts) errors.push('Transcripts are required');
+    if (!formData.agreeTerms) errors.push('You must agree to the terms and conditions');
+    
+    return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setError(errors[0]);
       return;
     }
 
+    setIsSubmitting(true);
+    setError('');
+
     try {
+      // This would be your actual registration API call
       await registerFaculty(formData);
-      setSuccessMessage('Registration successful! Redirecting to login...');
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        workPreference: '',
-        resume: null,
-        transcripts: null,
-        agreeTerms: false,
-      });
-      setErrors({});
+      
+      setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => {
         navigate('/faculty/login');
       }, 2000);
     } catch (err) {
-      alert(err.detail || 'Registration failed.');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
   return (
-    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-light">
-      <div className="row g-0 card-shadow shadow-lg rounded-4 overflow-hidden" style={{ maxWidth: '950px', width: '100%' }}>
-        {/* Left Panel */}
-        <div className="col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center fav-login-left-panel text-white p-4 rounded-start">
-          <h4 className="text-center mb-3">Welcome to Faculty Finder</h4>
-          <p className="text-center">
-            We connect universities with a professional network of qualified faculty — quickly, efficiently, and affordably.
-          </p>
+    <div className="faculty-registration-container">
+      <div className="faculty-registration-content position-relative">
+        <button 
+          onClick={() => navigate('/')} 
+          className="btn btn-close position-absolute" 
+          style={{top: '1rem', right: '1rem', zIndex: 10, fontSize: '1.25rem'}}
+          aria-label="Close"
+        >
+          <FaTimes />
+        </button>
+        {/* Left Panel with Image - Same as login */}
+        <div className="faculty-registration-left-panel">
+          <div className="login-image-container">
+            <div className="login-image-overlay"></div>
+          </div>
+          <div className="login-left-content">
+            <h2>Join Our Faculty Network</h2>
+            <p>Register to access exclusive faculty opportunities and resources.</p>
+            
+            <div className="features-list">
+              <div className="feature-item">
+                <span className="feature-icon"><FaCheck /></span>
+                <span>Connect with universities</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"><FaCheck /></span>
+                <span>Find teaching positions</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon"><FaCheck /></span>
+                <span>Manage your profile</span>
+              </div>
+            </div>
+          </div>
         </div>
-        {/* Right Panel */}
-        <div className="col-md-6 col-12 bg-white p-4 rounded-end d-flex align-items-center justify-content-center" style={{ minHeight: '600px' }}>
-          <div className="w-100" style={{ maxWidth: '400px' }}>
-            <h4 className="mb-3 text-center text-md-start fac-recruiter-title">Faculty Registration</h4>
-            <form onSubmit={handleSubmit} noValidate>
-              {successMessage && (
-                <div className="alert alert-success text-center" role="alert">
-                  {successMessage}
-                </div>
-              )}
-              {/* First Name */}
-              <div className="mb-3">
-                <label className="form-label">First Name *</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className={`form-control field-control ${errors.firstName ? 'is-invalid' : ''}`}
-                />
-                {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
-              </div>
 
-              {/* Last Name */}
-              <div className="mb-3">
-                <label className="form-label">Last Name *</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className={`form-control field-control ${errors.lastName ? 'is-invalid' : ''}`}
-                />
-                {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
-              </div>
+        {/* Right Panel - Registration Form */}
+        <div className="faculty-login-right-panel">
+          <div className="login-form-container">
+            <h2>Create Account</h2>
+            <p className="text-center text-muted mb-4">Fill in your details to get started</p>
+            
+            {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
+            {success && <Alert variant="success" className="mb-4">{success}</Alert>}
+            
+            <Form onSubmit={handleSubmit} className="faculty-registration-form">
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-4">
+                    <div className="input-group">
+                      <span className="input-icon"><FaUserGraduate /></span>
+                      <Form.Control
+                        type="text"
+                        name="firstName"
+                        placeholder="First Name"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        className="form-control-lg"
+                        required
+                      />
+                    </div>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-4">
+                    <div className="input-group">
+                      <span className="input-icon"><FaUserGraduate /></span>
+                      <Form.Control
+                        type="text"
+                        name="lastName"
+                        placeholder="Last Name"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className="form-control-lg"
+                        required
+                      />
+                    </div>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-              {/* Email */}
-              <div className="mb-3">
-                <label className="form-label">Email *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`form-control field-control ${errors.email ? 'is-invalid' : ''}`}
-                />
-                {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-              </div>
-
-              {/* Password */}
-              <div className="mb-3">
-                <label className="form-label">Password *</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`form-control field-control ${errors.password ? 'is-invalid' : ''}`}
-                />
-                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-              </div>
-
-              {/* Work Preference */}
-              <div className="mb-3">
-                <label className="form-label">Work Preference *</label>
-                <select
-                  name="workPreference"
-                  value={formData.workPreference}
-                  onChange={handleChange}
-                  className={`fac-form-select field-control ${errors.workPreference ? 'is-invalid' : ''}`}
-                >
-                  <option value="">-- Select Work Preference --</option>
-                  <option value="full-time">Full-time</option>
-                  <option value="part-time">Part-time</option>
-                  <option value="remote">Remote</option>
-                </select>
-                {errors.workPreference && <div className="invalid-feedback">{errors.workPreference}</div>}
-              </div>
-
-              {/* Resume */}
-              <div className="mb-3">
-                <label className="form-label">Resume *</label>
-                <input
-                  type="file"
-                  name="resume"
-                  onChange={handleChange}
-                  className={`form-control field-control ${errors.resume ? 'is-invalid' : ''}`}
-                  accept=".pdf,.doc,.docx"
-                />
-                {errors.resume && <div className="invalid-feedback">{errors.resume}</div>}
-              </div>
-
-              {/* Transcripts */}
-              <div className="mb-3">
-                <label className="form-label">Transcripts *</label>
-                <input
-                  type="file"
-                  name="transcripts"
-                  onChange={handleChange}
-                  className={`form-control field-control ${errors.transcripts ? 'is-invalid' : ''}`}
-                  accept=".pdf,.doc,.docx"
-                />
-                {errors.transcripts && <div className="invalid-feedback">{errors.transcripts}</div>}
-              </div>
-
-              {/* Terms and Conditions */}
-              <div className="mb-3">
-                <div className="form-check">
-                  <input
-                    type="checkbox"
-                    name="agreeTerms"
-                    checked={formData.agreeTerms}
+              <Form.Group className="mb-4">
+                <div className="input-group">
+                  <span className="input-icon"><FaUserGraduate /></span>
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    placeholder="Email Address"
+                    value={formData.email}
                     onChange={handleChange}
-                    className={`form-check-input ${errors.agreeTerms ? 'is-invalid' : ''}`}
+                    className="form-control-lg"
+                    required
                   />
-                  <label className="form-check-label">
-                    I agree to the <a href="/terms" target="_blank">Terms and Conditions</a>
-                  </label>
                 </div>
-                {errors.agreeTerms && <div className="invalid-feedback">{errors.agreeTerms}</div>}
-              </div>
-              <button type="submit" className="btn btn-primary w-100">
-                Register
-              </button>
-            </form>
-            <p className="text-center mt-3">
-              Already have an account? <Link to="/faculty/login">Sign in</Link>
-            </p>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <div className="input-group">
+                  <span className="input-icon"><FaLock /></span>
+                  <Form.Control
+                    type="password"
+                    name="password"
+                    placeholder="Create Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="form-control-lg"
+                    required
+                  />
+                </div>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <div className="input-group">
+                  <span className="input-icon"><FaFileAlt /></span>
+                  <Form.Select
+                    name="workPreference"
+                    value={formData.workPreference}
+                    onChange={handleChange}
+                    className="form-control-lg"
+                    required
+                  >
+                    <option value="">Select Work Preference</option>
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="adjunct">Adjunct</option>
+                    <option value="visiting">Visiting Professor</option>
+                  </Form.Select>
+                </div>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label className="mb-2 d-block">Resume (PDF, DOC, DOCX)</Form.Label>
+                <div className="file-upload-wrapper" style={{ position: 'relative' }}>
+                  <Form.Control
+                    type="file"
+                    name="resume"
+                    onChange={handleChange}
+                    className="form-control-lg file-upload-input"
+                    accept=".pdf,.doc,.docx"
+                    required
+                    style={{
+                      opacity: 0,
+                      position: 'absolute',
+                      width: '100%',
+                      height: '100%',
+                      top: 0,
+                      left: 0,
+                      cursor: 'pointer',
+                      zIndex: 2
+                    }}
+                  />
+                  <div className="file-upload-display d-flex align-items-center" 
+                    style={{
+                      border: '1px solid #ced4da',
+                      borderRadius: '0.5rem',
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#f8f9fa',
+                      minHeight: '3.5rem',
+                      transition: 'all 0.2s',
+                      position: 'relative',
+                      zIndex: 1
+                    }}
+                  >
+                    <span className="text-muted">{fileNames.resume}</span>
+                    <span className="ms-auto btn btn-outline-secondary btn-sm" style={{ pointerEvents: 'none' }}>
+                      Choose File
+                    </span>
+                  </div>
+                </div>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label className="mb-2 d-block">Transcripts (PDF, DOC, DOCX)</Form.Label>
+                <div className="file-upload-wrapper" style={{ position: 'relative' }}>
+                  <Form.Control
+                    type="file"
+                    name="transcripts"
+                    onChange={handleChange}
+                    className="form-control-lg file-upload-input"
+                    accept=".pdf,.doc,.docx"
+                    required
+                    style={{
+                      opacity: 0,
+                      position: 'absolute',
+                      width: '100%',
+                      height: '100%',
+                      top: 0,
+                      left: 0,
+                      cursor: 'pointer',
+                      zIndex: 2
+                    }}
+                  />
+                  <div className="file-upload-display d-flex align-items-center"
+                    style={{
+                      border: '1px solid #ced4da',
+                      borderRadius: '0.5rem',
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#f8f9fa',
+                      minHeight: '3.5rem',
+                      transition: 'all 0.2s',
+                      position: 'relative',
+                      zIndex: 1
+                    }}
+                  >
+                    <span className="text-muted">{fileNames.transcripts}</span>
+                    <span className="ms-auto btn btn-outline-secondary btn-sm" style={{ pointerEvents: 'none' }}>
+                      Choose File
+                    </span>
+                  </div>
+                </div>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Check
+                  type="checkbox"
+                  id="agreeTerms"
+                  name="agreeTerms"
+                  checked={formData.agreeTerms}
+                  onChange={handleChange}
+                  label={
+                    <span>
+                      I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and{' '}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    </span>
+                  }
+                  className="form-check"
+                />
+              </Form.Group>
+
+              <Button 
+                type="submit" 
+                variant="primary" 
+                className="w-100 btn-lg fac-login-button position-relative overflow-hidden"
+                disabled={isSubmitting}
+                style={{
+                  transition: 'all 0.3s ease',
+                  border: 'none',
+                  background: 'linear-gradient(45deg, #0d6efd, #0b5ed7)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(13, 110, 253, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                <FaArrowRight className="ms-2" style={{ transition: 'transform 0.3s ease' }} />
+              </Button>
+            </Form>
+
+            <div className="text-center mt-4">
+              <p className="text-muted">
+                Already have an account?{' '}
+                <Link to="/faculty/login" className="register-link text-primary text-decoration-none">
+                  Sign in
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

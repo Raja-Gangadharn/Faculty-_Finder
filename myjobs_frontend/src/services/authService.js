@@ -37,6 +37,15 @@ export const getUserRole = () => {
   };
 };
 
+export const setUserRole = (userData) => {
+  localStorage.setItem('is_faculty', userData.isFaculty);
+  localStorage.setItem('is_recruiter', userData.isRecruiter);
+  localStorage.setItem('is_verified', userData.isVerified);
+  localStorage.setItem('user_id', userData.userId);
+  localStorage.setItem('email', userData.email);
+  localStorage.setItem('first_name', userData.firstName);
+  localStorage.setItem('last_name', userData.lastName);
+};
 /**
  * Logout the user
  */
@@ -173,14 +182,15 @@ export const registerFaculty = async (formData) => {
 export const registerRecruiter = async (formData) => {
   try {
     const response = await api.post('recruiter/register/', {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
+      first_name: formData.first_name || formData.firstName, // Handle both formats
+      last_name: formData.last_name || formData.lastName,   // Handle both formats
       email: formData.email,
       password: formData.password,
       college: formData.college
     });
     return response.data;
   } catch (error) {
+    console.error('Registration error details:', error.response?.data);
     throw error.response?.data || { detail: 'Recruiter registration failed' };
   }
 };

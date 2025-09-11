@@ -34,7 +34,7 @@ const RecruiterLayout = () => {
             <div className="content-wrapper">
               <Outlet />
             </div>
-            <Footer className="mt-auto" />
+            <Footer className="mt-auto " />
           </Container>
           {showFab && <FloatingActionButton />}
         </main>

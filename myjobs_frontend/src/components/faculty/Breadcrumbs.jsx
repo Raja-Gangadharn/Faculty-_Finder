@@ -33,7 +33,7 @@ const Breadcrumbs = () => {
   }
 
   return (
-    <Container fluid className="bg-light py-2 border-bottom">
+    <Container fluid className="bg-light py-2 border-bottom mt-0">
       <nav aria-label="breadcrumb">
         <ol className="breadcrumb mb-0">
           <li className="breadcrumb-item">

@@ -8,7 +8,9 @@ import {
   FaBriefcase,
   FaSignOutAlt,
   FaTimes,
-  FaFileAlt
+  FaFileAlt,
+  FaBookmark,
+  FaComments
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../../assets/faculty/Sidebar.css';
@@ -49,10 +51,16 @@ const Sidebar = ({ onLinkClick, isOpen, onClose }) => {
     }
   }, [location, isOpen, onClose]);
 
-  const handleLinkClick = () => {
-    onLinkClick();
+  const handleLinkClick = (e) => {
     if (window.innerWidth < 992) {
       onClose();
+    }
+    onLinkClick();
+    // Move focus to main content after navigation
+    const mainContent = document.querySelector('main');
+    if (mainContent) {
+      mainContent.setAttribute('tabIndex', '-1');
+      mainContent.focus();
     }
   };
 
@@ -60,16 +68,27 @@ const Sidebar = ({ onLinkClick, isOpen, onClose }) => {
     { id: 'dashboard', label: 'Dashboard', icon: <FaHome className="me-2" />, path: '/faculty/dashboard' },
     { id: 'profile', label: 'My Profile', icon: <FaUserEdit className="me-2" />, path: '/faculty/profile' },
     { id: 'jobs', label: 'Job Opportunities', icon: <FaBriefcase className="me-2" />, path: '/faculty/jobs' },
-    { id: 'applications', label: 'My Applications', icon: <FaFileAlt className="me-2" />, path: '/faculty/applications' },
+    { id: 'saved-jobs', label: 'Saved Jobs', icon: <FaBookmark className="me-2" />, path: '/faculty/saved-jobs' },
   ];
 
   return (
     <>
-      <div className={`faculty-portal sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} role="button" aria-label="Close sidebar" tabIndex={isOpen ? 0 : -1} />
+      <div 
+        className={`faculty-portal sidebar-overlay ${isOpen ? 'show' : ''}`} 
+        onClick={onClose} 
+        role="button" 
+        aria-label="Close sidebar" 
+        aria-hidden={!isOpen}
+        tabIndex={isOpen ? 0 : -1}
+        onKeyDown={(e) => e.key === 'Enter' && onClose()}
+        style={!isOpen ? { display: 'none' } : {}}
+      />
       <div 
         className={`faculty-portal faculty-sidebar d-flex flex-column ${isOpen ? 'show' : ''}`}
         aria-hidden={!isOpen}
         aria-label="Sidebar navigation"
+        tabIndex={-1}
+        style={!isOpen ? { display: 'none' } : {}}
       >
         <div className="flex-grow-1 d-flex flex-column">
           <div>

@@ -1,162 +1,366 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Table, Form, Button, Row, Col, Modal, Pagination } from 'react-bootstrap';
+import { 
+  Container, Card, Button, Badge, Dropdown, Modal
+} from 'react-bootstrap';
+import { 
+  FaUserGraduate, FaEnvelope, 
+  FaUniversity, FaTrashAlt, FaEye,
+  FaSortAmountDown
+} from 'react-icons/fa';
 
-// Mock data – replace with API data later:
-
+// Mock data – replace with API data later
 const mockMarkedProfiles = [
-  { id: 1, name: 'Dr. Alan Turing', email: 'alan@sample.edu', department: 'Computer Science', preference: 'Remote' },
-  { id: 2, name: 'Prof. Barbara Liskov', email: 'barbara@sample.edu', department: 'Electrical Engineering', preference: 'On-campus' },
-  { id: 3, name: 'Dr. Claude Shannon', email: 'claude@sample.edu', department: 'Mathematics', preference: 'Hybrid' },
-  { id: 4, name: 'Prof. Donald Knuth', email: 'donald@sample.edu', department: 'Computer Science', preference: 'Remote' },
-  { id: 5, name: 'Dr. Edsger Dijkstra', email: 'edsger@sample.edu', department: 'Computer Science', preference: 'On-campus' },
-  // add more for pagination demo
-  { id: 6, name: 'Prof. Frances Allen', email: 'frances@sample.edu', department: 'Computer Science', preference: 'Hybrid' },
-  { id: 7, name: 'Dr. Grace Hopper', email: 'grace@sample.edu', department: 'Computer Science', preference: 'Remote' },
-  { id: 8, name: 'Prof. Hedy Lamarr', email: 'hedy@sample.edu', department: 'Physics', preference: 'On-campus' },
-  { id: 9, name: 'Dr. Ivan Sutherland', email: 'ivan@sample.edu', department: 'Computer Science', preference: 'Hybrid' },
-  { id: 10, name: 'Prof. John McCarthy', email: 'john@sample.edu', department: 'Computer Science', preference: 'Remote' },
+  { 
+    id: 1, 
+    name: 'Dr. Alan Turing', 
+    email: 'alan@sample.edu', 
+    department: 'Computer Science', 
+    preference: 'Remote'
+  },
+  { 
+    id: 2, 
+    name: 'Prof. Barbara Liskov', 
+    email: 'barbara@sample.edu', 
+    department: 'Electrical Engineering', 
+    preference: 'On-campus'
+  },
+  { 
+    id: 3, 
+    name: 'Dr. Claude Shannon', 
+    email: 'claude@sample.edu', 
+    department: 'Mathematics', 
+    preference: 'Hybrid'
+  },
+  { 
+    id: 4, 
+    name: 'Prof. Donald Knuth', 
+    email: 'donald@sample.edu', 
+    department: 'Computer Science', 
+    preference: 'Remote'
+  },
+  { 
+    id: 5, 
+    name: 'Dr. Edsger Dijkstra', 
+    email: 'edsger@sample.edu', 
+    department: 'Computer Science', 
+    preference: 'On-campus'
+  },
 ];
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
 
 const MarkedProfiles = () => {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState(mockMarkedProfiles);
-  const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
-  // Filter profiles by name/email
-  const filtered = useMemo(() => {
-    return profiles.filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.email.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search, profiles]);
+  // Status and priority functionality removed as per request
+
+  // Sort profiles
+  const sortedProfiles = useMemo(() => {
+    const result = [...profiles];
+    
+    result.sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === 'department') {
+        comparison = a.department.localeCompare(b.department);
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [profiles, sortBy, sortOrder]);
 
   // Pagination
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE) || 1;
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pageCount = Math.ceil(sortedProfiles.length / PAGE_SIZE) || 1;
+  const paginated = sortedProfiles.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalItems = sortedProfiles.length;
 
   const handleDelete = (id) => {
     setProfiles((prev) => prev.filter((p) => p.id !== id));
     setDeleteTarget(null);
   };
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
-  };
+
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  return (
-    <div>
-      <Row className="align-items-center mb-3">
-        <Col><h3 className="mb-0">Marked Faculty Profiles</h3></Col>
-        <Col md="4">
-          <Form.Control
-            placeholder="Search by name or email..."
-            value={search}
-            onChange={handleSearchChange}
-          />
-        </Col>
-      </Row>
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
 
-      <Card className="shadow-sm">
-        <Card.Body className="p-0">
-          <Table responsive hover className="mb-0">
-            <thead className="table-light">
-              <tr>
-                <th>Faculty Name</th>
-                <th>Email</th>
-                <th>Department</th>
-                <th>Work Preference</th>
-                <th className="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="text-center py-4 text-muted">
-                    No profiles found.
-                  </td>
-                </tr>
-              ) : (
-                paginated.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <span 
-                        className="text-primary" 
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => navigate(`/recruiter/faculty/${p.facultyId || p.id}`)}
-                      >
-                        {p.name}
-                      </span>
-                    </td>
-                    <td>{p.email}</td>
-                    <td>{p.department}</td>
-                    <td>{p.preference}</td>
-                    <td className="text-end">
-                      <Button 
-                        variant="primary" 
-                        size="sm" 
-                        className="me-2"
-                        onClick={() => navigate(`/recruiter/faculty/${p.facultyId || p.id}`)}
-                      >
-                        View Profile
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(p)}>
-                        Remove
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </Table>
-        </Card.Body>
-      </Card>
+  const SortIndicator = ({ field }) => (
+    <span 
+      role="button" 
+      className="ms-1"
+      onClick={() => handleSort(field)}
+    >
+      <FaSortAmountDown 
+        className={`transition-opacity ${sortBy === field ? 'opacity-100' : 'opacity-0'}`} 
+        style={{ transform: sortOrder === 'asc' ? 'rotate(180deg)' : 'none' }}
+      />
+    </span>
+  );
+
+  return (
+    <Container fluid className="py-4 marked-profiles-container">
+      <div className="mb-4">
+        <h2 className="mb-1">Marked Faculty Profiles</h2>
+        <p className="text-muted mb-0">
+          {totalItems} {totalItems === 1 ? 'candidate' : 'candidates'} marked for review
+        </p>
+      </div>
+
+      {/* Sort and Pagination Info */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <Dropdown>
+          <Dropdown.Toggle variant="outline-secondary" size="sm" className="d-flex align-items-center gap-1">
+            <FaSortAmountDown size={12} /> Sort
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item 
+              active={sortBy === 'name'}
+              onClick={() => handleSort('name')}
+            >
+              Name {sortBy === 'name' && (sortOrder === 'desc' ? '↓' : '↑')}
+            </Dropdown.Item>
+            <Dropdown.Item 
+              active={sortBy === 'department'}
+              onClick={() => handleSort('department')}
+            >
+              Department {sortBy === 'department' && (sortOrder === 'desc' ? '↓' : '↑')}
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        <div className="text-muted small">
+          {totalItems} {totalItems === 1 ? 'profile' : 'profiles'} found
+        </div>
+      </div>
+
+      {paginated.length === 0 ? (
+        <Card className="shadow-sm border-0 text-center py-5">
+          <Card.Body>
+            <h4>No profiles found</h4>
+            <p className="text-muted">
+              No faculty profiles have been marked yet.
+            </p>
+          </Card.Body>
+        </Card>
+      ) : (
+        <div className="profile-list">
+          {paginated.map((profile) => (
+            <Card key={profile.id} className="mb-3 border-0 shadow-sm hover-shadow transition-all">
+              <Card.Body>
+                <div className="d-flex flex-column flex-md-row">
+                  {/* Left Column - Profile Info */}
+                  <div className="flex-grow-1 pe-md-3">
+                    <div className="d-flex align-items-start">
+                      <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                           style={{ width: '48px', height: '48px' }}>
+                        <FaUserGraduate size={20} />
+                      </div>
+                      
+                      <div className="flex-grow-1">
+                        <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                          <h5 className="mb-0 me-2">
+                            <span 
+                              role="button" 
+                              className="text-primary"
+                              onClick={() => navigate(`/recruiter/faculty/${profile.facultyId || profile.id}`)}
+                            >
+                              {profile.name}
+                            </span>
+                          </h5>
+
+                        </div>
+                        
+                        <div className="d-flex flex-wrap align-items-center gap-3 text-muted small mb-2">
+                          <span className="d-flex align-items-center">
+                            <FaEnvelope className="me-1" /> {profile.email}
+                          </span>
+                          <span className="d-flex align-items-center">
+                            <FaUniversity className="me-1" /> {profile.department}
+                          </span>
+                        </div>
+                        
+                        <div className="d-flex align-items-center mt-2">
+                          <Badge bg="light" text="dark" className="border fw-normal">
+                            {profile.preference}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="d-flex gap-2 mt-3">
+                    <Button 
+                      variant="outline-primary" 
+                      size="sm" 
+                      className="d-flex align-items-center gap-1"
+                      onClick={() => navigate(`/recruiter/faculty/${profile.facultyId || profile.id}`)}
+                    >
+                      <FaEye size={12} /> View
+                    </Button>
+                    <Button 
+                      variant="outline-danger" 
+                      size="sm" 
+                      className="d-flex align-items-center gap-1"
+                      onClick={() => setDeleteTarget(profile)}
+                    >
+                      <FaTrashAlt size={12} /> Remove
+                    </Button>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {pageCount > 1 && (
-        <Pagination className="mt-3">
-          {[...Array(pageCount)].map((_, idx) => {
-            const page = idx + 1;
-            return (
-              <Pagination.Item
-                key={page}
-                active={page === currentPage}
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </Pagination.Item>
-            );
-          })}
-        </Pagination>
+        <div className="d-flex justify-content-center mt-4">
+          <nav aria-label="Profile pagination">
+            <ul className="pagination mb-0">
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button 
+                  className="page-link" 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+              </li>
+              
+              {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
+                // Show first page, last page, current page, and pages around current page
+                let pageNum;
+                if (pageCount <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= pageCount - 2) {
+                  pageNum = pageCount - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(pageNum)}>
+                      {pageNum}
+                    </button>
+                  </li>
+                );
+              })}
+              
+              <li className={`page-item ${currentPage === pageCount ? 'disabled' : ''}`}>
+                <button 
+                  className="page-link" 
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pageCount}
+                >
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
       )}
 
       {/* Delete confirm modal */}
       <Modal show={!!deleteTarget} onHide={() => setDeleteTarget(null)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Removal</Modal.Title>
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title>Remove from Marked</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to remove <strong>{deleteTarget?.name}</strong> from marked profiles?
+        <Modal.Body className="py-4">
+          <div className="text-center">
+            <div className="bg-danger bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+              <FaTrashAlt size={24} className="text-danger" />
+            </div>
+            <h5>Remove {deleteTarget?.name}?</h5>
+            <p className="text-muted">
+              This will remove the candidate from your marked list. You can mark them again later if needed.
+            </p>
+          </div>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="light" onClick={() => setDeleteTarget(null)} className="px-4">
             Cancel
           </Button>
-          <Button variant="danger" onClick={() => handleDelete(deleteTarget.id)}>
+          <Button 
+            variant="danger" 
+            onClick={() => {
+              handleDelete(deleteTarget?.id);
+              setDeleteTarget(null);
+            }}
+            className="px-4"
+          >
             Remove
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
-
 };
+
+// Add some custom styles
+const styles = `
+  .marked-profiles-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .profile-list .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .profile-list .card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .hover-shadow {
+    transition: box-shadow 0.2s;
+  }
+  
+  .hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .transition-all {
+    transition: all 0.2s;
+  }
+  
+  .opacity-0 {
+    opacity: 0;
+  }
+  
+  .opacity-100 {
+    opacity: 1;
+  }
+  
+  .cursor-pointer {
+    cursor: pointer;
+  }
+`;
+
+// Add styles to the document head
+const styleElement = document.createElement('style');
+styleElement.textContent = styles;
+document.head.appendChild(styleElement);
 
 export default MarkedProfiles;

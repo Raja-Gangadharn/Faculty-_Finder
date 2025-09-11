@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from 'react-bootstrap';
-import { Card, Form, Button, Row, Col, Table, Alert, Badge } from 'react-bootstrap';
-import { FaPlusCircle, FaTrash ,FaBriefcase, FaMapMarkerAlt, FaMoneyBillWave, FaCalendarAlt } from 'react-icons/fa';
+import { Card, Form, Button, Row, Col, Table, Alert, Badge, Dropdown } from 'react-bootstrap';
+import { FaPlusCircle, FaTrash, FaBriefcase, FaMapMarkerAlt, FaMoneyBillWave, FaCalendarAlt, FaEllipsisV } from 'react-icons/fa';
 import { BsCardChecklist } from 'react-icons/bs';
 import { motion } from 'framer-motion';
 import './recruiter.css';
@@ -21,7 +21,42 @@ const PostJob = () => {
     pdf: null,
   });
 
-  const [jobs, setJobs] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState({});
+
+  const toggleDropdown = (jobId, isOpen) => {
+    setDropdownOpen(prev => ({
+      ...prev,
+      [jobId]: isOpen
+    }));
+  };
+
+  const [jobs, setJobs] = useState([
+    // Sample data - remove this in production
+    {
+      id: '1',
+      title: 'Senior React Developer',
+      location: 'New York, NY',
+      salary: '$120,000 - $150,000',
+      deadline: '2023-12-31',
+      status: 'open'
+    },
+    {
+      id: '2',
+      title: 'UX/UI Designer',
+      location: 'Remote',
+      salary: '$90,000 - $110,000',
+      deadline: '2023-11-30',
+      status: 'paused'
+    },
+    {
+      id: '3',
+      title: 'Backend Engineer',
+      location: 'San Francisco, CA',
+      salary: '$130,000 - $160,000',
+      deadline: '2023-12-15',
+      status: 'closed'
+    }
+  ]);
   const [validated, setValidated] = useState(false);
   const [showAlert, setShowAlert] = useState({ show: false, message: '', variant: 'success' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -33,6 +68,33 @@ const PostJob = () => {
       ...prev,
       [name]: files ? files[0] : value,
     }));
+  };
+
+  const handleStatusChange = (jobId, newStatus) => {
+    setJobs(jobs.map(job => 
+      job.id === jobId ? { ...job, status: newStatus } : job
+    ));
+    // Close the dropdown after selection
+    toggleDropdown(jobId, false);
+    // Here you would typically make an API call to update the status
+    console.log(`Updating job ${jobId} status to ${newStatus}`);
+  };
+
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case 'open':
+        return 'success';
+      case 'paused':
+        return 'warning';
+      case 'closed':
+        return 'secondary';
+      default:
+        return 'light';
+    }
+  };
+
+  const getStatusDisplayText = (status) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const handleSubmit = (e) => {
@@ -47,6 +109,7 @@ const PostJob = () => {
 
     const newJob = {
       id: crypto.randomUUID(),
+      status: 'open', // Default status for new jobs
       ...formData,
       postedAt: new Date(),
     };
@@ -363,7 +426,7 @@ const PostJob = () => {
                     <th>SALARY</th>
                     <th>DEADLINE</th>
                     <th>STATUS</th>
-                    <th className="text-end">ACTIONS</th>
+                    <th className="text-center">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -375,41 +438,82 @@ const PostJob = () => {
                       transition={{ duration: 0.2 }}
                       className="position-relative"
                     >
-                      <td className="fw-medium">{job.title}</td>
                       <td>
-                        <div className="d-flex align-items-center text-muted">
-                          <FaMapMarkerAlt className="me-1" size={12} />
-                          {job.location}
+                        <div className="d-flex flex-column">
+                          <span className="fw-medium">{job.title}</span>
+                          <small className="text-muted">Posted on {new Date().toLocaleDateString()}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <FaMapMarkerAlt className="text-primary me-2" />
+                          <span>{job.location}</span>
                         </div>
                       </td>
                       <td className="text-nowrap">{job.salary}</td>
                       <td className="text-nowrap">
                         <div className="d-flex align-items-center">
-                          <FaCalendarAlt className="me-1 text-muted" size={12} />
-                          {new Date(job.deadline).toLocaleDateString('en-IN')}
+                          <FaCalendarAlt className="text-muted me-2" />
+                          {new Date(job.deadline).toLocaleDateString()}
                         </div>
                       </td>
                       <td>
-                        <Badge
-                          bg={getStatus(job.deadline) === 'Live' ? 'success' : 'danger'}
-                          className="d-inline-flex align-items-center"
+                        <Dropdown 
+                          show={dropdownOpen[job.id]} 
+                          onToggle={(isOpen) => toggleDropdown(job.id, isOpen)}
                         >
-                          {getStatus(job.deadline) === 'Live' ? (
-                            <span className="dot bg-white me-1"></span>
-                          ) : null}
-                          {getStatus(job.deadline)}
-                        </Badge>
+                          <Dropdown.Toggle 
+                            variant={getStatusBadgeVariant(job.status)}
+                            id={`status-dropdown-${job.id}`}
+                            className="d-flex align-items-center"
+                            style={{
+                              minWidth: '100px',
+                              justifyContent: 'space-between',
+                              padding: '0.25rem 0.75rem'
+                            }}
+                          >
+                            {getStatusDisplayText(job.status)}
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
+                            <Dropdown.Item 
+                              active={job.status === 'open'}
+                              onClick={() => handleStatusChange(job.id, 'open')}
+                              className="d-flex align-items-center text-decoration-none"
+                            >
+                              <span className="badge bg-success me-2"></span>
+                              Open
+                            </Dropdown.Item>
+                            <Dropdown.Item 
+                              active={job.status === 'paused'}
+                              onClick={() => handleStatusChange(job.id, 'paused')}
+                              className="d-flex align-items-center text-decoration-none"
+                            >
+                              <span className="badge bg-warning me-2"></span>
+                              Paused
+                            </Dropdown.Item>
+                            <Dropdown.Item 
+                              active={job.status === 'closed'}
+                              onClick={() => handleStatusChange(job.id, 'closed')}
+                              className="d-flex align-items-center text-decoration-none"
+                            >
+                              <span className="badge bg-secondary me-2"></span>
+                              Closed
+                            </Dropdown.Item>
+                          </Dropdown.Menu>
+                        </Dropdown>
                       </td>
-                      <td className="text-end">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDeleteClick(job.id)}
-                          className="p-1"
-                          title="Delete Job"
-                        >
-                          <FaTrash size={14} />
-                        </Button>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <button 
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => {
+                              setJobToDelete(job.id);
+                              setShowDeleteConfirm(true);
+                            }}
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   ))}

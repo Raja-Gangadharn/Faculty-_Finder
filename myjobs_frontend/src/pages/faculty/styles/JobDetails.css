@@ -1,0 +1,90 @@
+/* JobDetails Component Styles */
+.job-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.job-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.job-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.5rem;
+}
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.job-org {
+  font-size: 1.25rem;
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+.job-description {
+  line-height: 1.7;
+  color: #495057;
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #212529;
+  margin: 2rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.requirements-list,
+.responsibilities-list {
+  padding-left: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.requirements-list li,
+.responsibilities-list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.apply-section {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-top: 2rem;
+}
+
+.apply-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .job-title {
+    font-size: 1.75rem;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+  }
+  
+  .job-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

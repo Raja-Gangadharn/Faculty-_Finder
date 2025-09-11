@@ -11,8 +11,8 @@ const Footer = () => {
     <footer className="faculty-footer">
       <Container>
         <Row className="footer-bottom">
-          <Col md={6} className="text-center text-md-start">
-            <p className="mb-0">&copy; {currentYear} Faculty Finder. All rights reserved.</p>
+          <Col xs={12} md="auto" className="mb-3 mb-md-0">
+            <p className="mb-2 mb-md-0">&copy; {currentYear} Faculty Finder. All rights reserved.</p>
             <div className="legal-links">
               <Link to="/privacy-policy">Privacy Policy</Link>
               <span className="divider">|</span>
@@ -21,15 +21,15 @@ const Footer = () => {
               <Link to="/cookies">Cookie Policy</Link>
             </div>
           </Col>
-          <Col md={6} className="text-center text-md-end">
-            <div className="social-links mx-5">
-              <a href="https://linkedin.com/company/faculty-finder" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+          <Col xs={12} md="auto">
+            <div className="social-links">
+              <a href="https://linkedin.com/company/faculty-finder" target="_blank" rel="noreferrer" aria-label="LinkedIn" title="LinkedIn">
                 <FaLinkedinIn />
               </a>
-              <a href="https://twitter.com/facultyfinder" target="_blank" rel="noreferrer" aria-label="Twitter">
+              <a href="https://twitter.com/facultyfinder" target="_blank" rel="noreferrer" aria-label="Twitter" title="Twitter">
                 <FaTwitter />
               </a>
-              <a href="https://facebook.com/facultyfinder" target="_blank" rel="noreferrer" aria-label="Facebook">
+              <a href="https://facebook.com/facultyfinder" target="_blank" rel="noreferrer" aria-label="Facebook" title="Facebook">
                 <FaUniversity />
               </a>
             </div>

@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Container, Row, Col, Pagination, Form } from 'react-bootstrap';
-import { FaSortAmountDown, FaSortAmountUp } from 'react-icons/fa';
-import JobFilters from '../../components/faculty/JobFilters';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Pagination, Alert, Form, Button } from 'react-bootstrap';
+import { FaSearch, FaSort } from 'react-icons/fa';
 import JobCard from '../../components/faculty/JobCard';
+import './styles/JobOpportunities.css';
 
 /*
   JobOpportunities.jsx
@@ -36,60 +37,114 @@ const mockJobs = [
     deadline: '15 Feb, 2045',
     postedAt: '2025-06-28',
   },
+  {
+    id: 3,
+    title: 'Assistant Professor – Electronics',
+    department: 'Electronics',
+    city: 'Los Angeles',
+    type: 'Full Time',
+    course: 'M.Tech',
+    location: 'canada',
+    salary: '$60k – $80k',
+    deadline: '15 Feb, 2045',
+    postedAt: '2025-07-28',
+  },
+  {
+    id: 4,
+    title: 'Assistant Professor – Civil',
+    department: 'Civil',
+    city: 'Los Angeles',
+    type: 'Full Time',
+    course: 'M.Tech',
+    location: 'Berlin',
+    salary: '$60k – $80k',
+    deadline: '15 Feb, 2045',
+    postedAt: '2025-08-02',
+  }
   
   // ...additional jobs
 ];
 
 const JobOpportunities = () => {
-  const [filters, setFilters] = useState({});
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState('newest');
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [appliedJobs, setAppliedJobs] = useState([]);   
+  const [showSaveAlert, setShowSaveAlert] = useState(false);
+  const [lastSavedJob, setLastSavedJob] = useState(null);
   const pageSize = 6;
+  
+  // Load saved jobs from localStorage on component mount
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+    setSavedJobs(saved);
+  }, []);
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // reset page when filters change
-  useEffect(() => setCurrentPage(1), [filters]);
+  // Reset page when sort option changes
+  useEffect(() => setCurrentPage(1), [sortOption]);
+  
+  // Save job to localStorage
+  const handleSaveJob = (job, isSaved) => {
+    let updatedSavedJobs;
+    
+    if (isSaved) {
+      updatedSavedJobs = [...savedJobs, job];
+      setLastSavedJob(job);
+      setShowSaveAlert(true);
+      // Auto-hide the alert after 3 seconds
+      setTimeout(() => setShowSaveAlert(false), 3000);
+    } else {
+      updatedSavedJobs = savedJobs.filter(savedJob => savedJob.id !== job.id);
+    }
+    
+    setSavedJobs(updatedSavedJobs);
+    localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+  };
+  
+  // Check if a job is saved
+  const isJobSaved = (jobId) => {
+    return savedJobs.some(job => job.id === jobId);
+  };
+  
+  // Handle job application
+  const handleApply = (jobId) => {
+    if (!appliedJobs.includes(jobId)) {
+      setAppliedJobs([...appliedJobs, jobId]);
+      // In a real app, you would make an API call here
+      console.log('Applied to job:', jobId);
+    }
+  };
 
-  /* --------------------------------------------------
-     FILTER LOGIC
-  -------------------------------------------------- */
+  // Sort and filter jobs
   const filteredJobs = useMemo(() => {
-    const filtered = mockJobs.filter((job) => {
-      if (filters['Job by Department']?.length && !filters['Job by Department'].includes(job.department)) {
-        return false;
-      }
-      if (filters['Job by City']?.length && !filters['Job by City'].includes(job.city)) {
-        return false;
-      }
-      if (filters['Job by Experience']?.length && !filters['Job by Experience'].includes(job.type)) {
-        return false;
-      }
-      if (filters['Job by Course']?.length && !filters['Job by Course'].includes(job.course)) {
-        return false;
-      }
-      return true;
-    });
-
+    let jobs = [...mockJobs];
+    
     // Apply sorting
-    return [...filtered].sort((a, b) => {
-      switch (sortOption) {
+    jobs.sort((a, b) => {
+      switch(sortOption) {
         case 'newest':
           return new Date(b.postedAt) - new Date(a.postedAt);
         case 'oldest':
           return new Date(a.postedAt) - new Date(b.postedAt);
-        case 'salary_high':
+        case 'salary-high':
           return parseFloat(b.salary.replace(/[^0-9.]/g, '')) - parseFloat(a.salary.replace(/[^0-9.]/g, ''));
-        case 'salary_low':
+        case 'salary-low':
           return parseFloat(a.salary.replace(/[^0-9.]/g, '')) - parseFloat(b.salary.replace(/[^0-9.]/g, ''));
+        case 'deadline':
+          return new Date(a.deadline) - new Date(b.deadline);
         default:
-          return 0;
+          return new Date(b.postedAt) - new Date(a.postedAt);
       }
     });
-  }, [filters, sortOption]);
+    
+    return jobs;
+  }, [sortOption]);
 
   /* -------------------- Pagination ------------------ */
   const paginatedJobs = filteredJobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -99,70 +154,137 @@ const JobOpportunities = () => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  /* --------------------------------------------------
-     RENDER
-  -------------------------------------------------- */
   return (
-    <Container fluid className="py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <h2 className="mb-0 me-3">Job Opportunities</h2>
-        <div className="d-flex align-items-center">
-          <span className="me-2 text-muted">
-            {sortOption.includes('salary') ? (
-              <FaSortAmountDown className="me-1" />
-            ) : sortOption === 'newest' ? (
-              <FaSortAmountDown className="me-1" />
-            ) : (
-              <FaSortAmountUp className="me-1" />
-            )}
-            Sort by:
-          </span>
-          <Form.Select 
-            size="sm"
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-            aria-label="Sort jobs"
-            className="border-primary"
-            style={{ width: '180px' }}
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="salary_high">Salary: High to Low</option>
-            <option value="salary_low">Salary: Low to High</option>
-          </Form.Select>
+    <Container className="job-opportunities py-4">
+      {/* Page Header */}
+      <div className="text-center mb-5">
+        <h1 className="display-5 fw-bold mb-3">Find Your Opportunity Here!</h1>
+        <p className="lead text-muted">Browse and apply to faculty positions from top institutions</p>
+        
+        {/* Search and Sort Bar */}
+        <div className="search-container mx-auto mt-4" style={{ maxWidth: '800px' }}>
+          <div className="d-flex flex-column flex-md-row gap-3">
+            <div className="input-group flex-grow-1">
+              <span className="input-group-text bg-white border-end-0">
+                <FaSearch className="text-muted my-2" />
+              </span>
+              <Form.Control 
+                type="text" 
+                placeholder="Search by job title, department, or location" 
+                className="border-start-0"
+              />
+              <Button variant="primary" className="px-4">
+                Search
+              </Button>
+            </div>
+            
+            <div className="d-flex align-items-center">
+              <div className="input-group" style={{ minWidth: '200px' }}>
+                <Form.Select 
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="form-select border-start-0"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="salary-high">Salary: High to Low</option>
+                  <option value="salary-low">Salary: Low to High</option>
+                  <option value="deadline">Deadline</option>
+                </Form.Select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <Row>
-        {/* Sidebar */}
-        <Col lg={3} className="mb-4 mb-lg-0">
-          <div className="job-filters-sidebar">
-            <JobFilters selected={filters} onChange={setFilters} />
+      
+      {/* Job Listings */}
+      <div>
+        {/* Save Confirmation Alert */}
+        {showSaveAlert && lastSavedJob && (
+          <Alert 
+            variant="success" 
+            className="d-flex align-items-center mb-4"
+            onClose={() => setShowSaveAlert(false)}
+            dismissible
+          >
+            <div className="d-flex align-items-center">
+              <i className="bi bi-bookmark-check-fill me-2"></i>
+              <span>Job saved: <strong>{lastSavedJob.title}</strong></span>
+            </div>
+            <Button 
+              variant="outline-success" 
+              size="sm" 
+              className="ms-5"
+              onClick={() => {
+                navigate('/faculty/saved-jobs');
+                setShowSaveAlert(false);
+              }}
+            >
+              View Saved
+            </Button>
+          </Alert>
+        )}
+        
+        {filteredJobs.length === 0 ? (
+          <div className="text-center py-5">
+            <i className="bi bi-search text-muted" style={{ fontSize: '3rem', opacity: 0.5 }}></i>
+            <h4 className="mt-3">No jobs found</h4>
+            <p className="text-muted">Try adjusting your search criteria</p>
           </div>
-        </Col>
-
-        {/* Job listings */}
-        <Col lg={9}>
-          {filteredJobs.length === 0 && <p className="text-muted">No jobs match the selected filters.</p>}
-          {paginatedJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Pagination className="justify-content-center mt-3">
-              <Pagination.First onClick={() => changePage(1)} disabled={currentPage === 1} />
-              <Pagination.Prev onClick={() => changePage(currentPage - 1)} disabled={currentPage === 1} />
-              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((num) => (
-                <Pagination.Item key={num} active={num === currentPage} onClick={() => changePage(num)}>
-                  {num}
-                </Pagination.Item>
-              ))}
-              <Pagination.Next onClick={() => changePage(currentPage + 1)} disabled={currentPage === totalPages} />
-              <Pagination.Last onClick={() => changePage(totalPages)} disabled={currentPage === totalPages} />
+        ) : (
+          <Row className="g-4">
+            {paginatedJobs.map((job) => (
+              <Col key={job.id} xs={12}>
+                <JobCard 
+                  job={job} 
+                  isSaved={isJobSaved(job.id)}
+                  isApplied={appliedJobs.includes(job.id)}
+                  onSaveToggle={handleSaveJob}
+                  onApply={handleApply}
+                />
+              </Col>
+            ))}
+          </Row>
+        )}
+        
+        {totalPages > 1 && (
+          <div className="d-flex justify-content-center mt-5">
+            <Pagination>
+              <Pagination.Prev 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              />
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Pagination.Item
+                    key={pageNum}
+                    active={pageNum === currentPage}
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Pagination.Item>
+                );
+              })}
+              <Pagination.Next 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              />
             </Pagination>
-          )}
-        </Col>
-      </Row>
+          </div>
+        )}
+      </div>
     </Container>
   );
 };

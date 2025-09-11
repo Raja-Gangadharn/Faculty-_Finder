@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Navbar, Nav, Container, Image, OverlayTrigger, Popover, ListGroup, Button } from 'react-bootstrap';
-import { FaBell, FaEnvelope, FaUser, FaSun, FaMoon, FaBars } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Navbar, Nav, Container, Image, OverlayTrigger, Popover, ListGroup, Button, Badge, Dropdown, Spinner } from 'react-bootstrap';
+import { FaBell, FaUser, FaSun, FaMoon, FaBars, FaEnvelope } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useFacultyCommunication } from '../../context/FacultyCommunicationContext';
 import '../../assets/faculty/TopNavbar.css';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const NOTIFICATIONS_PER_PAGE = 10;
 
 const TopNavbar = ({ onToggleSidebar }) => {
   const { firstName, lastName, email } = useAuth();
+  const { unreadCount: unreadMessageCount } = useFacultyCommunication();
 
   // Theme state handling
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -28,6 +32,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
       }
     }
   }, [isDarkMode]);
+
   // Dummy notifications; replace with real data later
   const [notifications, setNotifications] = useState(() => 
     Array.from({ length: 120 }).map((_, i) => ({
@@ -40,7 +45,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(5);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(5);
 
   const loadMoreNotifications = useCallback(() => {
     if (isLoading || !hasMore) return;
@@ -70,14 +75,14 @@ const TopNavbar = ({ onToggleSidebar }) => {
     setNotifications(prev => 
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    setUnreadNotificationCount(prev => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = () => {
     setNotifications(prev => 
       prev.map(n => ({ ...n, read: true }))
     );
-    setUnreadCount(0);
+    setUnreadNotificationCount(0);
   };
 
   const userInitials = `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
@@ -87,7 +92,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
       bg={isDarkMode ? 'dark' : 'light'} 
       variant={isDarkMode ? 'dark' : 'light'} 
       expand="lg" 
-      className="top-navbar"
+      className="top-navbar mb-0"
       fixed="top"
     >
       <Container fluid>
@@ -106,15 +111,15 @@ const TopNavbar = ({ onToggleSidebar }) => {
                   <Popover.Header as="div" className="d-flex justify-content-between align-items-center notifications-header px-3 py-2">
                     <div>
                       <span className="fw-semibold">Notifications</span>
-                      {unreadCount > 0 && (
-                        <span className="badge bg-primary ms-2">{unreadCount} unread</span>
+                      {unreadNotificationCount > 0 && (
+                        <span className="badge bg-primary ms-2">{unreadNotificationCount} unread</span>
                       )}
                     </div>
                     <div>
                       <button 
                         className="btn btn-sm btn-link p-0 text-decoration-none me-2"
                         onClick={markAllAsRead}
-                        disabled={unreadCount === 0}
+                        disabled={unreadNotificationCount === 0}
                       >
                         Mark all as read
                       </button>
@@ -188,18 +193,24 @@ const TopNavbar = ({ onToggleSidebar }) => {
             >
               <Nav.Link as="span" className="position-relative me-3" style={{ cursor: 'pointer' }}>
                 <FaBell size={20} />
-                {unreadCount > 0 && (
+                {unreadNotificationCount > 0 && (
                   <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                   </span>
                 )}
               </Nav.Link>
             </OverlayTrigger>
-            <Nav.Link className="position-relative me-3">
-              <FaEnvelope size={20} />
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                5
-              </span>
+            <Nav.Link 
+              as={Link} 
+              to="/faculty/communication" 
+              className="position-relative"
+            >
+              <FaEnvelope size={18} />
+              {unreadMessageCount > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem' }}>
+                  {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                </span>
+              )}
             </Nav.Link>
             <div className="user-profile d-flex align-items-center">
               <div className="avatar me-2 bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style={{ width: '36px', height: '36px' }}>
@@ -213,6 +224,18 @@ const TopNavbar = ({ onToggleSidebar }) => {
           </Nav>
         </Navbar.Collapse>
       </Container>
+      
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-25 d-flex align-items-center justify-content-center" style={{ zIndex: 1060 }}>
+          <div className="bg-white p-4 rounded shadow d-flex align-items-center">
+            <Spinner animation="border" className="me-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+            <span>Processing your request...</span>
+          </div>
+        </div>
+      )}
     </Navbar>
   );
 };

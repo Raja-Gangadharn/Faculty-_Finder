@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Badge, Button, Spinner, Alert } from 'react-bootstrap';
+import './styles/JobDetails.css';
 import {
   ArrowLeft, Calendar, Clock, GeoAlt,
   CurrencyDollar, Briefcase, Book, FileText, ClockHistory

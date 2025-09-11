@@ -96,6 +96,12 @@
   flex-shrink: 0; /* Prevent icon from shrinking */
 }
 
+/* Section Title in Dark Mode */
+.faculty-portal.dark-mode .section-title {
+  color: #e9ecef;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
 .faculty-portal.dark-mode .tutorial-btn:hover {
   background-color: #0571ffec;
 }

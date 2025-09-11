@@ -72,7 +72,7 @@ const FacultyLayout = () => {
         <div className="main-content flex-grow-1 d-flex flex-column">
           <TopNavbar onToggleSidebar={toggleSidebar} />
           <Breadcrumbs />
-          <Container fluid className="flex-grow-1 py-4">
+          <Container fluid className="flex-grow-1 py-2">
             <Row>
               <Col>
                 <Outlet />

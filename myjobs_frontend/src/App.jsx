@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
 import { SidebarProvider } from './context/SidebarContext';
 import { AuthProvider } from './context/AuthContext';
+import { FacultyCommunicationProvider } from './context/FacultyCommunicationContext';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -21,7 +22,9 @@ function App() {
   return (
     <AuthProvider>
       <SidebarProvider>
-        <AppContent />
+        <FacultyCommunicationProvider>
+          <AppContent />
+        </FacultyCommunicationProvider>
       </SidebarProvider>
     </AuthProvider>
   );

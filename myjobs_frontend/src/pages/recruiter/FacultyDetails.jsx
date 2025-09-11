@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Tab, Nav, Spinner, Alert, Button } from 'react-bootstrap';
-import './FacultyDetails.css';
+import "./recruiter.css";
 import { 
   FaUser, FaGraduationCap, FaFileAlt, FaCertificate, 
-  FaUserTie, FaFilePdf, FaDownload, FaArrowLeft 
+  FaUserTie, FaFilePdf, FaDownload, FaArrowLeft, FaEnvelope 
 } from 'react-icons/fa';
-import axios from 'axios';
+import { BsEnvelopePlus } from 'react-icons/bs';
 
 // Default API configuration
 const API_BASE_URL = (import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8000/api').replace(/\/+$/, ''); // Remove trailing slashes
@@ -17,10 +17,46 @@ const FacultyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [faculty, setFaculty] = useState(null);
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showInviteConfirm, setShowInviteConfirm] = useState(false);
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
-  const [isProfileSaved, setIsProfileSaved] = useState(false);
+  const [isInviteSent, setIsInviteSent] = useState(false);
   const [isProfileMarked, setIsProfileMarked] = useState(false);
+  const [inviteData, setInviteData] = useState({
+    jobTitle: '',
+    jobType: '',
+    salary: '',
+    salaryPeriod: 'year',
+    location: '',
+    description: '',
+    message: ''
+  });
+
+  const handleInviteSubmit = () => {
+    // Validate required fields
+    if (!inviteData.jobTitle || !inviteData.jobType || !inviteData.location || !inviteData.description) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Here you would typically make an API call to send the invite
+    console.log('Sending invitation with data:', {
+      facultyId: facultyId,
+      facultyName: faculty?.name,
+      facultyEmail: faculty?.email,
+      ...inviteData
+    });
+    
+    setIsInviteSent(true);
+    setShowInviteConfirm(false);
+  };
+  
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setInviteData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
 
   useEffect(() => {
     // Mock faculty data
@@ -111,11 +147,15 @@ const FacultyDetails = () => {
         </a>
         <div className="d-flex gap-2">
           <button 
-            className={`btn ${isProfileSaved ? 'btn-success' : 'btn-outline-primary'}`}
-            onClick={() => isProfileSaved ? null : setShowSaveConfirm(true)}
-            disabled={isProfileSaved}
+            className={`btn ${isInviteSent ? 'btn-success' : 'btn-primary'}`}
+            onClick={() => isInviteSent ? null : setShowInviteConfirm(true)}
+            disabled={isInviteSent}
           >
-            {isProfileSaved ? 'Profile Saved' : 'Save Profile'}
+            {isInviteSent ? (
+              <><FaEnvelope className="me-1" /> Invite Sent</>
+            ) : (
+              <><BsEnvelopePlus className="me-1" /> Invite</>
+            )}
           </button>
           <button 
             className={`btn ${isProfileMarked ? 'btn-danger' : 'btn-outline-danger'}`}
@@ -127,30 +167,88 @@ const FacultyDetails = () => {
         </div>
       </div>
 
-      {/* Save Profile Confirmation Modal */}
-      {showSaveConfirm && (
+      {/* Invite Confirmation Modal */}
+      {showInviteConfirm && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirm Save</h5>
-                <button type="button" className="btn-close" onClick={() => setShowSaveConfirm(false)}></button>
+                <h5 className="modal-title">Send Invitation</h5>
+                <button type="button" className="btn-close" onClick={() => setShowInviteConfirm(false)}></button>
               </div>
               <div className="modal-body">
-                Are you sure you want to save this faculty profile for future reference?
+                <p className="mb-4">You're inviting <strong>{faculty?.name || 'this faculty member'}</strong> to apply for a position. Please fill in the job details below.</p>
+                
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label htmlFor="jobTitle" className="form-label">Job Title <span className="text-danger">*</span></label>
+                    <input type="text" className="form-control" id="jobTitle" required />
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <label htmlFor="jobType" className="form-label">Job Type <span className="text-danger">*</span></label>
+                    <select className="form-select" id="jobType" required>
+                      <option value="">Select job type</option>
+                      <option value="full_time">Full Time</option>
+                      <option value="part_time">Part Time</option>
+                      <option value="contract">Contract</option>
+                      <option value="visiting">Visiting</option>
+                    </select>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <label htmlFor="salary" className="form-label">Salary Range</label>
+                    <div className="input-group">
+                      <span className="input-group-text">$</span>
+                      <input type="text" className="form-control" id="salary" placeholder="e.g. 80,000 - 100,000" />
+                      <select className="form-select" style={{maxWidth: '100px'}}>
+                        <option value="year">/year</option>
+                        <option value="month">/month</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <label htmlFor="location" className="form-label">Location <span className="text-danger">*</span></label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      id="location" 
+                      placeholder="e.g. New York, NY" 
+                      required 
+                    />
+                  </div>
+                  
+                  <div className="col-12">
+                    <label htmlFor="jobDescription" className="form-label">Job Description <span className="text-danger">*</span></label>
+                    <textarea 
+                      className="form-control" 
+                      id="jobDescription" 
+                      rows="4" 
+                      placeholder="Enter detailed job description..." 
+                      required
+                    ></textarea>
+                  </div>
+                  
+                  <div className="col-12">
+                    <label htmlFor="message" className="form-label">Personal Message (Optional)</label>
+                    <textarea 
+                      className="form-control" 
+                      id="message" 
+                      rows="3" 
+                      placeholder="Add a personal note to the faculty member..."
+                    ></textarea>
+                  </div>
+                </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowSaveConfirm(false)}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowInviteConfirm(false)}>Cancel</button>
                 <button 
                   type="button" 
                   className="btn btn-primary"
-                  onClick={() => {
-                    setIsProfileSaved(true);
-                    setShowSaveConfirm(false);
-                    // Here you would typically make an API call to save the profile
-                  }}
+                  onClick={handleInviteSubmit}
                 >
-                  Yes, Save Profile
+<BsEnvelopePlus className="me-1" /> Send Job Invitation
                 </button>
               </div>
             </div>

@@ -5,8 +5,10 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
-import '../node_modules/bootstrap-icons/font/bootstrap-icons.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css';
+
 import App from './App.jsx';
 
 // Initialize the application
