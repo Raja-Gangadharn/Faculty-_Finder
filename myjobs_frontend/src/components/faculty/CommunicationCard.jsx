@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Badge } from 'react-bootstrap';
 import { FaExternalLinkAlt, FaComment, FaCheck, FaTimes } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Props:
@@ -13,6 +14,7 @@ import { FaExternalLinkAlt, FaComment, FaCheck, FaTimes } from 'react-icons/fa';
  * - onOpenModal: (item) => void  // open status/modal for comment or update
  */
 const CommunicationCard = ({ item, activeTab, onViewFaculty, onAccept, onReject, onOpenThread, onOpenModal }) => {
+  const navigate = useNavigate();
   const last = item.lastUpdate;
   const showActionButtons = activeTab === 'invites' && item.status === 'pending';
   const commentEnabled = item.status === 'accepted'; // comments only for accepted items
@@ -33,12 +35,12 @@ const CommunicationCard = ({ item, activeTab, onViewFaculty, onAccept, onReject,
     <div className="communication-card d-flex justify-content-between align-items-center p-3" onClick={() => onOpenThread(item.id)} style={{ cursor: 'pointer' }}>
       <div className="d-flex align-items-center">
         <div className="avatar me-3">
-          <div className="avatar-circle">{item.facultyName?.charAt(0)}</div>
+          <div className="avatar-circle">{item.collegeName?.charAt(0) || 'C'}</div>
         </div>
         <div>
           <div className="d-flex align-items-center">
-            <strong className="me-2">{item.facultyName}</strong>
-            <Button variant="link" className="p-0" onClick={(e) => { e.stopPropagation(); onViewFaculty(item.facultyId); }} title="Open faculty">
+            <strong className="me-2">{item.collegeName || 'College'}</strong>
+            <Button variant="link" className="p-0" onClick={(e) => { e.stopPropagation(); navigate(`/faculty/jobs/${item.jobId}`); onViewFaculty(item.collegeId); }} title="View job details">
               <FaExternalLinkAlt size={12} className="text-muted" />
             </Button>
           </div>

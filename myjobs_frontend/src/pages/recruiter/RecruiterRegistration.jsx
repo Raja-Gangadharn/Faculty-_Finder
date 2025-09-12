@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { registerRecruiter } from '../../services/authService';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import './recruiter.css';
+import { FaTimes } from 'react-icons/fa';
 
 const RecruiterRegistration = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -83,8 +85,16 @@ const RecruiterRegistration = () => {
           </p>
         </div>
         {/* Right Panel */}
-        <div className="col-md-6 col-12 bg-white p-4 rounded-end d-flex align-items-center justify-content-center" style={{ minHeight: '600px' }}>
-          <div className="w-100" style={{ maxWidth: '400px' }}>
+        <div className="col-md-6 col-12 bg-white p-4 rounded-end d-flex align-items-center justify-content-center position-relative" style={{ minHeight: '600px' }}>
+          <button 
+            onClick={() => navigate('/')} 
+            className="btn p-0 position-absolute" 
+            style={{top: '1.5rem', right: '2rem', zIndex: 10, fontSize: '1.5rem', color: '#6c757d'}}
+            aria-label="Close"
+          >
+            <FaTimes />
+          </button>
+          <div className="w-100 position-relative" style={{ maxWidth: '400px' }}>
             <h4 className="mb-3 text-center text-md-start recruiter-title">Recruiter Registration</h4>
             <form onSubmit={handleSubmit} noValidate>
               {/* First Name */}

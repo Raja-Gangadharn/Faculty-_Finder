@@ -51,7 +51,7 @@ const StatusUpdateModal = ({ show, onHide, invite, onUpdate }) => {
     const updateData = {
       status,
       notes,
-      date: new Date(date).toISOString(),
+      date: date ? new Date(date).toISOString() : new Date().toISOString(),
       ...(status === 'interview' && {
         interviewTime: time,
         timezone

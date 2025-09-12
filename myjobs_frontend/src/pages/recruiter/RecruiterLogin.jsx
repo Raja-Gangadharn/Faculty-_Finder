@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../../services/authService";
+import {  FaTimes } from 'react-icons/fa';
 import "./recruiter.css";
 
 const RecruiterLogin = () => {
@@ -46,9 +47,16 @@ const RecruiterLogin = () => {
           </div>
         </div>
 
-        <div className="login-right-panel d-flex align-items-center justify-content-center" style={{ padding: '40px 32px' }}>
-          <div className="login-form-container w-100" style={{ maxWidth: '400px' }}>
-            <button className="btn-close position-absolute top-0 end-0 m-3" onClick={() => navigate('/')}></button>
+        <div className="login-right-panel d-flex align-items-center justify-content-center position-relative" style={{ padding: '40px 32px' }}>
+          <div className="login-form-container w-100 position-relative" style={{ maxWidth: '400px' }}>
+            <button 
+              onClick={() => navigate('/')} 
+              className="btn p-0 position-absolute" 
+              style={{top: '-2rem', right: '0', zIndex: 10, fontSize: '1.5rem', color: '#6c757d'}}
+              aria-label="Close"
+            >
+              <FaTimes />
+            </button>
               <h3 className="text-center mb-4 recruiter-title">Recruiter Login</h3>
             <form onSubmit={handleSubmit} className="login-form">
               <div className="form-group mb-3">

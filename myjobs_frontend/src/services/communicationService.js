@@ -146,16 +146,48 @@ const updateInviteStatus = (inviteId, status) => {
 };
 
 // Add status update
+// helper: which statuses are main (used for filtering/display)
+// helper: main statuses for filtering & preservation
+const MAIN_STATUSES = ['pending', 'accepted', 'rejected', 'interview', 'hired'];
+const isMainStatus = (s) => MAIN_STATUSES.includes(s);
+
+// Add status update (only updates lastUpdate & item.status; does NOT append messages)
 const addStatusUpdate = (inviteId, updateData) => {
   const data = getCommunicationData();
   const invite = [...data.invites, ...data.sent].find(inv => inv.id === inviteId);
-  
+
   if (invite) {
-    // If status is being updated to 'rejected', update the main status as well
-    if (updateData.status === 'rejected') {
-      invite.status = 'rejected';
+    // Preserve previous lastUpdate so we don't overwrite a main status with follow_up
+    const prevLast = invite.lastUpdate || {};
+    const incomingStatus = updateData.status;
+
+    // Decide new lastUpdate.status:
+    // - if incoming is main -> use incoming
+    // - else if prevLast.status is main -> keep prevLast.status (do not overwrite with follow_up)
+    // - else fallback to incoming or invite.status
+    let newLastStatus = null;
+    if (incomingStatus && isMainStatus(incomingStatus)) {
+      newLastStatus = incomingStatus;
+    } else if (prevLast.status && isMainStatus(prevLast.status)) {
+      newLastStatus = prevLast.status;
+    } else {
+      newLastStatus = incomingStatus || invite.status || null;
     }
-    invite.lastUpdate = updateData;
+
+    // Merge lastUpdate but force our determined status & date
+    invite.lastUpdate = {
+      ...prevLast,
+      ...updateData,
+      status: newLastStatus,
+      date: updateData.date || new Date().toISOString()
+    };
+
+    // If incoming is main status, also update invite.status
+    if (incomingStatus && isMainStatus(incomingStatus)) {
+      invite.status = incomingStatus;
+    }
+
+    // DO NOT append messages here — caller will add a single message.
     localStorage.setItem(COMMUNICATION_KEY, JSON.stringify(data));
     return true;
   }

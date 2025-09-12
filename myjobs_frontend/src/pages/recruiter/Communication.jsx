@@ -58,58 +58,61 @@ const Communication = () => {
 
   const navigate = useNavigate();
 
-  // Handle status update with auto-message
-  const handleStatusUpdate = async (updateData) => {
-    if (!selectedInvite) return;
+
+  // Handle status update with single message (use notes if provided, otherwise fallback)
+const handleStatusUpdate = async (updateData) => {
+  if (!selectedInvite) return;
+  
+  try {
+    // 1) Update the status metadata (no messages appended here)
+    await communicationService.addStatusUpdate(selectedInvite.id, updateData);
     
-    try {
-      // First update the status
-      await communicationService.addStatusUpdate(selectedInvite.id, updateData);
-      
-      // Generate appropriate auto-message based on status
-      let messageContent = '';
-      const jobType = selectedInvite.jobTitle.includes('Part Time') ? 'Part Time' : 'Full Time';
-      
-      switch(updateData.status) {
-        case 'accepted':
-          messageContent = 'Recruiter has accepted your application.';
-          break;
-        case 'rejected':
-          messageContent = 'Recruiter has rejected your application.';
-          // Reset active thread to force re-render with new status
-          const currentThread = activeThread;
-          setActiveThread(null);
-          setTimeout(() => setActiveThread(currentThread), 0);
-          break;
-        case 'interview':
-          messageContent = `Recruiter scheduled an interview on ${new Date(updateData.interviewDate).toLocaleString()} (${Intl.DateTimeFormat().resolvedOptions().timeZone}).`;
-          break;
-        case 'hired':
-          messageContent = `Recruiter marked you as hired for ${jobType}.`;
-          break;
-        case 'follow_up':
-          messageContent = `Recruiter added a follow-up note: ${updateData.remarks || 'No additional notes'}.`;
-          break;
-        default:
-          messageContent = `Status updated to: ${updateData.status}`;
+    // 2) Build single messageContent — prefer recruiter-entered text
+    let messageContent = '';
+    const jobType = selectedInvite.jobTitle?.includes('Part Time') ? 'Part Time' : 'Full Time';
+    // recruiter may be sending notes in `updateData.notes` or `updateData.remarks` — prefer `.notes`
+    const userText = updateData.notes || updateData.remarks || '';
+
+    if (updateData.status === 'accepted') {
+      messageContent = userText || 'Recruiter has accepted your application.';
+    } else if (updateData.status === 'rejected') {
+      messageContent = userText || 'Recruiter has rejected your application.';
+      // force re-render of thread
+      const currentThread = activeThread;
+      setActiveThread(null);
+      setTimeout(() => setActiveThread(currentThread), 0);
+    } else if (updateData.status === 'interview') {
+      if (userText) {
+        messageContent = userText;
+      } else if (updateData.interviewDate) {
+        messageContent = `Recruiter scheduled an interview on ${new Date(updateData.interviewDate).toLocaleString()} (${Intl.DateTimeFormat().resolvedOptions().timeZone}).`;
+      } else {
+        messageContent = 'Recruiter scheduled an interview.';
       }
-      
-      // Add the auto-message to the thread
-      await communicationService.addMessage(selectedInvite.id, {
-        sender: 'recruiter',
-        content: messageContent,
-        isSystem: true
-      });
-      
-      // Refresh the data and force UI update
-      await loadCommunicationData();
-      
-      // Close the status modal
-      setShowStatusModal(false);
-    } catch (error) {
-      console.error('Error updating status:', error);
+    } else if (updateData.status === 'hired') {
+      messageContent = userText || `Recruiter marked you as hired for ${jobType}.`;
+    } else if (updateData.status === 'follow_up') {
+      // prefer recruiter-entered follow-up text, otherwise use default fallback
+      messageContent = userText ? `Recruiter added a follow-up note: ${userText}` : 'Recruiter added a follow-up note: No additional notes.';
+    } else {
+      // generic fallback
+      messageContent = userText || `Status updated to: ${updateData.status}`;
     }
-  };
+
+    // 3) Send exactly one message to conversation
+    await communicationService.addMessage(selectedInvite.id, {
+      sender: 'recruiter',
+      content: messageContent,
+      isSystem: true
+    });
+
+    // 4) Refresh UI
+    await loadCommunicationData();
+    setShowStatusModal(false);
+  } catch (error) {
+    console.error('Error updating status:', error);
+  }
+};
 
   // Format date
   const formatDate = (dateString) => {
@@ -271,23 +274,32 @@ const Communication = () => {
     );
   };
 
-  // Filter items based on active tab and filter
-  const getFilteredItems = () => {
-    if (!communicationData) return [];
-    
-    const items = activeTab === 'invites' 
-      ? [...communicationData.invites]
-      : [...communicationData.sent];
-      
-    const currentFilter = activeTab === 'invites' ? inviteFilter : sentFilter;
-    
-    if (currentFilter === 'all') return items;
-    
-    return items.filter(item => 
-      item.status === currentFilter || 
-      (item.lastUpdate && item.lastUpdate.status === currentFilter)
-    );
-  };
+  // new: use MAIN_STATUSES to determine display status
+const MAIN_STATUSES = ['pending', 'accepted', 'rejected', 'interview', 'hired'];
+
+const getDisplayStatus = (item) => {
+  const lastStatus = item.lastUpdate && item.lastUpdate.status;
+  // prefer a main lastUpdate.status (e.g. 'interview') if present; otherwise use item.status
+  return (lastStatus && MAIN_STATUSES.includes(lastStatus)) ? lastStatus : item.status;
+};
+
+const getFilteredItems = () => {
+  if (!communicationData) return [];
+
+  const items = activeTab === 'invites' 
+    ? [...communicationData.invites]
+    : [...communicationData.sent];
+
+  const currentFilter = activeTab === 'invites' ? inviteFilter : sentFilter;
+
+  if (currentFilter === 'all') return items;
+
+  return items.filter(item => {
+    const displayStatus = getDisplayStatus(item);
+    return displayStatus === currentFilter;
+  });
+};
+
 
   // Filter component
   const FilterBar = ({ activeFilter, onFilterChange }) => {
