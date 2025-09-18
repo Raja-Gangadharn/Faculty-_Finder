@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Tab, Nav, Spinner, Alert, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Tab, Nav, Spinner, Alert, Button, Modal } from 'react-bootstrap';
 import "./recruiter.css";
 import { 
   FaUser, FaGraduationCap, FaFileAlt, FaCertificate, 
   FaUserTie, FaFilePdf, FaDownload, FaArrowLeft, FaEnvelope 
 } from 'react-icons/fa';
 import { BsEnvelopePlus } from 'react-icons/bs';
+import JobSelectionModal from '../../components/recruiter/JobSelectionModal';
 
 // Default API configuration
 const API_BASE_URL = (import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8000/api').replace(/\/+$/, ''); // Remove trailing slashes
@@ -17,45 +18,37 @@ const FacultyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [faculty, setFaculty] = useState(null);
-  const [showInviteConfirm, setShowInviteConfirm] = useState(false);
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
+  const [showJobSelectModal, setShowJobSelectModal] = useState(false);
   const [isInviteSent, setIsInviteSent] = useState(false);
   const [isProfileMarked, setIsProfileMarked] = useState(false);
-  const [inviteData, setInviteData] = useState({
-    jobTitle: '',
-    jobType: '',
-    salary: '',
-    salaryPeriod: 'year',
-    location: '',
-    description: '',
-    message: ''
-  });
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const handleInviteSubmit = () => {
-    // Validate required fields
-    if (!inviteData.jobTitle || !inviteData.jobType || !inviteData.location || !inviteData.description) {
-      alert('Please fill in all required fields');
-      return;
+  // Load current user data
+  useEffect(() => {
+    // In a real app, you would fetch the current user from your auth context or API
+    const mockCurrentUser = {
+      id: 'recruiter-123', // This would come from your auth system
+      name: 'Recruiter Name',
+      email: 'recruiter@example.com',
+      role: 'recruiter'
+    };
+    setCurrentUser(mockCurrentUser);
+  }, []);
+
+  const handleJobSelect = async (selectedJob) => {
+    try {
+      // Here you would typically send the invite to the backend
+      console.log('Sending invite with job:', selectedJob, 'to faculty:', facultyId);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setIsInviteSent(true);
+      setShowJobSelectModal(false);
+    } catch (error) {
+      console.error('Error sending invite:', error);
     }
-    
-    // Here you would typically make an API call to send the invite
-    console.log('Sending invitation with data:', {
-      facultyId: facultyId,
-      facultyName: faculty?.name,
-      facultyEmail: faculty?.email,
-      ...inviteData
-    });
-    
-    setIsInviteSent(true);
-    setShowInviteConfirm(false);
-  };
-  
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setInviteData(prev => ({
-      ...prev,
-      [id]: value
-    }));
   };
 
   useEffect(() => {
@@ -146,17 +139,14 @@ const FacultyDetails = () => {
           <FaArrowLeft className="me-1" /> Back to Results
         </a>
         <div className="d-flex gap-2">
-          <button 
-            className={`btn ${isInviteSent ? 'btn-success' : 'btn-primary'}`}
-            onClick={() => isInviteSent ? null : setShowInviteConfirm(true)}
+          <Button 
+            variant="primary" 
+            className="me-2"
+            onClick={() => setShowJobSelectModal(true)}
             disabled={isInviteSent}
           >
-            {isInviteSent ? (
-              <><FaEnvelope className="me-1" /> Invite Sent</>
-            ) : (
-              <><BsEnvelopePlus className="me-1" /> Invite</>
-            )}
-          </button>
+            {isInviteSent ? 'Invitation Sent' : 'Send Job Invite'}
+          </Button>
           <button 
             className={`btn ${isProfileMarked ? 'btn-danger' : 'btn-outline-danger'}`}
             onClick={() => isProfileMarked ? null : setShowMarkConfirm(true)}
@@ -167,94 +157,13 @@ const FacultyDetails = () => {
         </div>
       </div>
 
-      {/* Invite Confirmation Modal */}
-      {showInviteConfirm && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Send Invitation</h5>
-                <button type="button" className="btn-close" onClick={() => setShowInviteConfirm(false)}></button>
-              </div>
-              <div className="modal-body">
-                <p className="mb-4">You're inviting <strong>{faculty?.name || 'this faculty member'}</strong> to apply for a position. Please fill in the job details below.</p>
-                
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label htmlFor="jobTitle" className="form-label">Job Title <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" id="jobTitle" required />
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <label htmlFor="jobType" className="form-label">Job Type <span className="text-danger">*</span></label>
-                    <select className="form-select" id="jobType" required>
-                      <option value="">Select job type</option>
-                      <option value="full_time">Full Time</option>
-                      <option value="part_time">Part Time</option>
-                      <option value="contract">Contract</option>
-                      <option value="visiting">Visiting</option>
-                    </select>
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <label htmlFor="salary" className="form-label">Salary Range</label>
-                    <div className="input-group">
-                      <span className="input-group-text">$</span>
-                      <input type="text" className="form-control" id="salary" placeholder="e.g. 80,000 - 100,000" />
-                      <select className="form-select" style={{maxWidth: '100px'}}>
-                        <option value="year">/year</option>
-                        <option value="month">/month</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <label htmlFor="location" className="form-label">Location <span className="text-danger">*</span></label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      id="location" 
-                      placeholder="e.g. New York, NY" 
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="col-12">
-                    <label htmlFor="jobDescription" className="form-label">Job Description <span className="text-danger">*</span></label>
-                    <textarea 
-                      className="form-control" 
-                      id="jobDescription" 
-                      rows="4" 
-                      placeholder="Enter detailed job description..." 
-                      required
-                    ></textarea>
-                  </div>
-                  
-                  <div className="col-12">
-                    <label htmlFor="message" className="form-label">Personal Message (Optional)</label>
-                    <textarea 
-                      className="form-control" 
-                      id="message" 
-                      rows="3" 
-                      placeholder="Add a personal note to the faculty member..."
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowInviteConfirm(false)}>Cancel</button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  onClick={handleInviteSubmit}
-                >
-<BsEnvelopePlus className="me-1" /> Send Job Invitation
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Job Selection Modal */}
+      <JobSelectionModal 
+        show={showJobSelectModal}
+        onHide={() => setShowJobSelectModal(false)}
+        onSelect={handleJobSelect}
+        recruiterId={currentUser?.id}
+      />
 
       {/* Mark Profile Confirmation Modal */}
       {showMarkConfirm && (

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Row,
@@ -12,9 +12,9 @@ import {
   ButtonGroup,
 } from "react-bootstrap";
 import { AiOutlineSearch } from "react-icons/ai";
-import { BsFilter, BsArrowClockwise, BsBookmarkCheckFill, BsBookmarkPlus, BsEnvelopePlus } from "react-icons/bs";
-import { FaEnvelope } from "react-icons/fa";
+import { BsFilter, BsArrowClockwise, BsBookmarkCheckFill, BsBookmarkPlus } from "react-icons/bs";
 import { motion, AnimatePresence } from "framer-motion";
+import JobSelectionModal from "../../components/recruiter/JobSelectionModal";
 
 // Mock data
 const mockFaculty = [
@@ -200,64 +200,47 @@ const SearchFaculty = () => {
   };
 
   // Invite state and handlers
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showJobSelectModal, setShowJobSelectModal] = useState(false);
   const [selectedFaculty, setSelectedFaculty] = useState(null);
-  const [inviteData, setInviteData] = useState({
-    jobTitle: '',
-    jobType: '',
-    salary: '',
-    salaryPeriod: 'year',
-    location: '',
-    description: '',
-    message: ''
-  });
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const handleInvite = (facultyId) => {
+  // Load current user data
+  useEffect(() => {
+    // In a real app, you would fetch the current user from your auth context or API
+    const mockCurrentUser = {
+      id: 'recruiter-123', // This would come from your auth system
+      name: 'Recruiter Name',
+      email: 'recruiter@example.com',
+      role: 'recruiter'
+    };
+    setCurrentUser(mockCurrentUser);
+  }, []);
+
+  const handleInviteClick = (facultyId) => {
     const faculty = mockFaculty.find(f => f.id === facultyId);
     setSelectedFaculty(faculty);
-    setShowInviteModal(true);
+    setShowJobSelectModal(true);
   };
 
-  const handleInviteSubmit = () => {
-    // Validate required fields
-    if (!inviteData.jobTitle || !inviteData.jobType || !inviteData.location || !inviteData.description) {
-      alert('Please fill in all required fields');
-      return;
+  const handleJobSelect = async (selectedJob) => {
+    try {
+      // Here you would typically send the invite to the backend
+      console.log('Sending invite with job:', selectedJob, 'to faculty:', selectedFaculty);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the UI to show the invite was sent
+      setFaculty(prevFaculty => 
+        prevFaculty.map(f => 
+          f.id === selectedFaculty.id ? { ...f, invited: true } : f
+        )
+      );
+      
+      setShowJobSelectModal(false);
+    } catch (error) {
+      console.error('Error sending invite:', error);
     }
-    
-    // Here you would typically make an API call to send the invite
-    console.log('Sending invitation with data:', {
-      facultyId: selectedFaculty?.id,
-      facultyName: selectedFaculty?.name,
-      facultyEmail: selectedFaculty?.email,
-      ...inviteData
-    });
-    
-    // Update the UI to show the invite was sent
-    setFaculty(prevFaculty => 
-      prevFaculty.map(f => 
-        f.id === selectedFaculty.id ? { ...f, invited: true } : f
-      )
-    );
-    
-    setShowInviteModal(false);
-    setInviteData({
-      jobTitle: '',
-      jobType: '',
-      salary: '',
-      salaryPeriod: 'year',
-      location: '',
-      description: '',
-      message: ''
-    });
-  };
-  
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setInviteData(prev => ({
-      ...prev,
-      [id]: value
-    }));
   };
 
   return (
@@ -400,29 +383,17 @@ const SearchFaculty = () => {
                           variant={f.saved ? "outline-success" : "outline-secondary"}
                           size="sm"
                           onClick={() => toggleSave(f.id)}
-                          className="d-flex align-items-center justify-content-center"
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            padding: '0',
-                            borderRadius: '50%'
-                          }}
-                          title={f.saved ? 'Remove from saved' : 'Save for later'}
+                          title={f.saved ? "Remove from saved" : "Save for later"}
                         >
-                          {f.saved ? <BsBookmarkCheckFill size={16} /> : <BsBookmarkPlus size={16} />}
+                          {f.saved ? <BsBookmarkCheckFill /> : <BsBookmarkPlus />}
                         </Button>
                         <Button
-                          variant={f.invited ? "outline-success" : "primary"}
+                          variant={f.invited ? "success" : "primary"}
                           size="sm"
-                          onClick={() => handleInvite(f.id)}
-                          className="d-flex align-items-center gap-1"
+                          onClick={() => handleInviteClick(f.id)}
                           disabled={f.invited}
                         >
-                          {f.invited ? (
-                            <><FaEnvelope className="me-1" /> Invited</>
-                          ) : (
-                            <><BsEnvelopePlus className="me-1" /> Invite</>
-                          )}
+                          {f.invited ? 'Invited' : 'Invite'}
                         </Button>
                       </div>
                     </td>
@@ -434,125 +405,13 @@ const SearchFaculty = () => {
         </Card.Body>
       </Card>
 
-      {/* Invite Confirmation Modal */}
-      {showInviteModal && selectedFaculty && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Send Job Invitation</h5>
-                <button type="button" className="btn-close" onClick={() => setShowInviteModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <p className="mb-4">You're inviting <strong>{selectedFaculty?.name}</strong> to apply for a position. Please fill in the job details below.</p>
-                
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label htmlFor="jobTitle" className="form-label">Job Title <span className="text-danger">*</span></label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      id="jobTitle" 
-                      value={inviteData.jobTitle}
-                      onChange={handleInputChange}
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <label htmlFor="jobType" className="form-label">Job Type <span className="text-danger">*</span></label>
-                    <select 
-                      className="form-select" 
-                      id="jobType" 
-                      value={inviteData.jobType}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select job type</option>
-                      <option value="full_time">Full Time</option>
-                      <option value="part_time">Part Time</option>
-                      <option value="contract">Contract</option>
-                      <option value="visiting">Visiting</option>
-                    </select>
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <label htmlFor="salary" className="form-label">Salary Range</label>
-                    <div className="input-group">
-                      <span className="input-group-text">$</span>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        id="salary" 
-                        value={inviteData.salary}
-                        onChange={handleInputChange}
-                        placeholder="e.g. 80,000 - 100,000" 
-                      />
-                      <select 
-                        className="form-select" 
-                        style={{maxWidth: '100px'}}
-                        value={inviteData.salaryPeriod}
-                        onChange={(e) => setInviteData(prev => ({...prev, salaryPeriod: e.target.value}))}
-                      >
-                        <option value="year">/year</option>
-                        <option value="month">/month</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <label htmlFor="location" className="form-label">Location <span className="text-danger">*</span></label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      id="location" 
-                      value={inviteData.location}
-                      onChange={handleInputChange}
-                      placeholder="e.g. New York, NY" 
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="col-12">
-                    <label htmlFor="description" className="form-label">Job Description <span className="text-danger">*</span></label>
-                    <textarea 
-                      className="form-control" 
-                      id="description" 
-                      rows="4" 
-                      value={inviteData.description}
-                      onChange={handleInputChange}
-                      placeholder="Enter detailed job description..." 
-                      required
-                    ></textarea>
-                  </div>
-                  
-                  <div className="col-12">
-                    <label htmlFor="message" className="form-label">Personal Message (Optional)</label>
-                    <textarea 
-                      className="form-control" 
-                      id="message" 
-                      rows="3" 
-                      value={inviteData.message}
-                      onChange={handleInputChange}
-                      placeholder="Add a personal note to the faculty member..."
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowInviteModal(false)}>Cancel</button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  onClick={handleInviteSubmit}
-                >
-                  <BsEnvelopePlus className="me-1" /> Send Job Invitation
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Job Selection Modal */}
+      <JobSelectionModal 
+        show={showJobSelectModal}
+        onHide={() => setShowJobSelectModal(false)}
+        onSelect={handleJobSelect}
+        recruiterId={currentUser?.id}
+      />
 
       {/* ----------------------------- Pagination ----------------------------- */}
       <Pagination className="mt-3 justify-content-center">

@@ -1,63 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Pagination, Alert, Form, Button } from 'react-bootstrap';
-import { FaSearch } from 'react-icons/fa';
+import { Container, Row, Col, Pagination, Alert, Form, Button, Spinner } from 'react-bootstrap';
+import { FaSearch, FaExclamationCircle } from 'react-icons/fa';
 import JobCard from '../../components/faculty/JobCard';
 import './styles/JobOpportunities.css';
 
-/* mockJobs left as-is; replace with API data later */
-const mockJobs = [
+const normalize = (str = '') => str.toString().toLowerCase().trim();
+
+// Sample job data
+const sampleJobs = [
   {
     id: 1,
-    title: 'Assistant Professor – Computer Science',
+    title: 'Computer Science Professor',
     department: 'Computer Science',
-    city: 'New York',
-    type: 'Full Time',
-    course: 'B.Tech',
-    location: 'New York, USA',
-    salary: '$80k – $100k',
-    deadline: '01 Jan, 2045',
-    postedAt: '2025-09-10',
+    job_type: 'Full-time',
+    location: 'New York, NY',
+    salary: '$80,000 - $100,000',
+    deadline: '2023-12-31',
+    course: 'Computer Science',
+    postedAt: '2023-10-15T10:00:00Z',
+    description: 'We are looking for an experienced Computer Science professor...',
+    requirements: 'PhD in Computer Science or related field...',
+    responsibilities: 'Teach undergraduate and graduate courses...'
   },
-  {
-    id: 2,
-    title: 'Lecturer – Electronics',
-    department: 'Electronics',
-    city: 'Los Angeles',
-    type: 'Contract',
-    course: 'M.Tech',
-    location: 'Los Angeles, USA',
-    salary: '$60k – $80k',
-    deadline: '15 Feb, 2045',
-    postedAt: '2025-09-09',
-  },
-  {
-    id: 3,
-    title: 'Assistant Professor – Electronics',
-    department: 'Electronics',
-    city: 'Los Angeles',
-    type: 'Full Time',
-    course: 'M.Tech',
-    location: 'canada',
-    salary: '$60k – $80k',
-    deadline: '15 Feb, 2045',
-    postedAt: '2025-07-28',
-  },
-  {
-    id: 4,
-    title: 'Assistant Professor – Civil',
-    department: 'Civil',
-    city: 'Los Angeles',
-    type: 'Full Time',
-    course: 'M.Tech',
-    location: 'Berlin',
-    salary: '$60k – $80k',
-    deadline: '15 Feb, 2045',
-    postedAt: '2025-08-02',
-  }
+  // Add more sample jobs as needed
 ];
-
-const normalize = (str = '') => str.toString().toLowerCase().trim();
 
 const JobOpportunities = () => {
   const navigate = useNavigate();
@@ -69,6 +36,9 @@ const JobOpportunities = () => {
   const [lastSavedJob, setLastSavedJob] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [jobs, setJobs] = useState(sampleJobs);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const pageSize = 6;
 
   /* Debounce search input to avoid filtering on every keystroke */
@@ -114,65 +84,86 @@ const JobOpportunities = () => {
   const handleApply = (jobId) => {
     if (!appliedJobs.includes(jobId)) {
       setAppliedJobs(prev => [...prev, jobId]);
-      // TODO: call API for apply
+      alert('Application submitted successfully!');
+    } else {
+      alert('You have already applied to this position.');
     }
   };
 
-  /* Improved search + sort logic:
-     - tokenizes the query ("can acad" => ["can","acad"])
-     - checks that every token exists in at least one searchable field (AND behavior)
-     - fields normalized to lowercase for case-insensitive match
+  /* Search and sort logic:
+     - Tokenizes the query ("can acad" => ["can","acad"])
+     - Checks that every token exists in at least one searchable field (AND behavior)
+     - Fields normalized to lowercase for case-insensitive match
   */
   const filteredJobs = useMemo(() => {
-    let jobs = [...mockJobs];
+    let filtered = [...jobs];
 
     const q = normalize(debouncedQuery);
     const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
 
     if (tokens.length) {
-      jobs = jobs.filter(job => {
+      filtered = filtered.filter(job => {
         if (!job) return false;
-        const fields = [
+        
+        // Include all searchable fields
+        const searchableFields = [
           job.title || '',
           job.department || '',
           job.location || '',
           job.course || '',
-          job.type || '',
-          job.city || ''
+          job.job_type || '',
+          job.description || '',
+          job.requirements || ''
         ].map(normalize);
 
         // For each token, require it to match at least one field (AND across tokens)
-        return tokens.every(token => fields.some(f => f.includes(token)));
+        return tokens.every(token => 
+          searchableFields.some(field => field.includes(token))
+        );
       });
     }
 
     // Sorting
-    const sorted = [...jobs].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       if (!a || !b) return 0;
+      
+      // Helper to parse salary strings into numbers (handles formats like "$80k - $100k" or "80000-100000")
+      const parseSalary = (salaryStr) => {
+        if (!salaryStr) return 0;
+        // Handle ranges (take the average)
+        const range = salaryStr.split('-').map(s => {
+          // Remove non-numeric characters and convert to number
+          const num = parseFloat(s.replace(/[^0-9.]/g, ''));
+          // If the number is in thousands (e.g., 80k), convert to actual number
+          return s.toLowerCase().includes('k') ? num * 1000 : num;
+        });
+        return range.reduce((sum, num) => sum + num, 0) / range.length;
+      };
+
       switch (sortOption) {
         case 'newest':
-          return new Date(b.postedAt || 0) - new Date(a.postedAt || 0);
+          return new Date(b.postedAt) - new Date(a.postedAt);
         case 'oldest':
-          return new Date(a.postedAt || 0) - new Date(b.postedAt || 0);
+          return new Date(a.postedAt) - new Date(b.postedAt);
         case 'salary-high': {
-          const salaryA = parseFloat((a.salary || '0').replace(/[^0-9.]/g, '')) || 0;
-          const salaryB = parseFloat((b.salary || '0').replace(/[^0-9.]/g, '')) || 0;
+          const salaryA = parseSalary(a.salary);
+          const salaryB = parseSalary(b.salary);
           return salaryB - salaryA;
         }
         case 'salary-low': {
-          const salaryA = parseFloat((a.salary || '0').replace(/[^0-9.]/g, '')) || 0;
-          const salaryB = parseFloat((b.salary || '0').replace(/[^0-9.]/g, '')) || 0;
+          const salaryA = parseSalary(a.salary);
+          const salaryB = parseSalary(b.salary);
           return salaryA - salaryB;
         }
         case 'deadline':
-          return new Date(a.deadline || 0) - new Date(b.deadline || 0);
+          return new Date(a.deadline) - new Date(b.deadline);
         default:
-          return new Date(b.postedAt || 0) - new Date(a.postedAt || 0);
+          return new Date(b.postedAt) - new Date(a.postedAt);
       }
     });
 
     return sorted;
-  }, [sortOption, debouncedQuery /* mockJobs is static here */]);
+  }, [sortOption, debouncedQuery, jobs]);
 
   const paginatedJobs = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -180,6 +171,34 @@ const JobOpportunities = () => {
   }, [filteredJobs, currentPage, pageSize]);
 
   const totalPages = Math.ceil(filteredJobs.length / pageSize);
+
+  if (isLoading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading jobs...</span>
+        </Spinner>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">
+          <div className="d-flex align-items-center">
+            <FaExclamationCircle className="me-2" />
+            {error}
+          </div>
+        </Alert>
+        <div className="text-center mt-3">
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <Container className="job-opportunities py-4">

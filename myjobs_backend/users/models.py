@@ -22,12 +22,12 @@ class FacultyProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    work_preference = models.CharField(max_length=20)
-    resume = models.FileField(upload_to='resumes/')
-    transcripts = models.FileField(upload_to='transcripts/')
+    work_preference = models.CharField(max_length=20, default='full_time')
+    resume = models.FileField(upload_to='resumes/', null=True, blank=True)
+    transcripts = models.FileField(upload_to='transcripts/', null=True, blank=True)
 
 class RecruiterProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    college = models.CharField(max_length=100)
+    college = models.CharField(max_length=100, default='Unknown College')

@@ -1,108 +1,194 @@
-import React, { useState } from 'react';
-import { Card, Button, Row, Col, Form, Accordion, Badge } from 'react-bootstrap';
-import { FaPlus, FaTrash, FaGraduationCap, FaBook } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Row, Col, Form, Accordion, Badge, Spinner, Alert } from 'react-bootstrap';
+import { FaPlus, FaTrash, FaGraduationCap, FaBook, FaEdit } from 'react-icons/fa';
 
 const EducationalInfo = ({ isEditing }) => {
-  const [education, setEducation] = useState([
-    {
-      id: 1,
-      degree: 'Ph.D.',
-      specialization: 'Computer Science',
-      university: 'Stanford University',
-      program: 'Computer Science',
-      year: '2015',
-      isResearch: false,
-      dissertationTitle: '',
-      abstract: ''
-    },
-    {
-      id: 2,
-      degree: 'M.S.',
-      specialization: 'Data Science',
-      university: 'MIT',
-      program: 'Data Science',
-      year: '2010',
-      isResearch: true,
-      dissertationTitle: 'Advanced Machine Learning Techniques',
-      abstract: 'A comprehensive study of modern machine learning algorithms and their applications.'
-    }
-  ]);
-
+  const [education, setEducation] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newEducation, setNewEducation] = useState({
+  const [editingId, setEditingId] = useState(null);
+
+  const initialFormState = {
     degree: '',
     specialization: '',
     university: '',
     program: '',
-    year: '',
-    isResearch: false,
-    dissertationTitle: '',
+    year: new Date().getFullYear().toString(),
+    is_research: false,
+    dissertation_title: '',
     abstract: ''
-  });
-
-  const handleAddEducation = () => {
-    setEducation([...education, { ...newEducation, id: Date.now() }]);
-    setNewEducation({
-      degree: '',
-      specialization: '',
-      university: '',
-      program: '',
-      year: '',
-      isResearch: false,
-      dissertationTitle: '',
-      abstract: ''
-    });
-    setShowAddForm(false);
   };
 
-  const handleRemoveEducation = (id) => {
-    setEducation(education.filter(edu => edu.id !== id));
-  };
+  const [formData, setFormData] = useState(initialFormState);
+
+  useEffect(() => {
+    // Initialize with sample data
+    const sampleData = [
+      {
+        id: 1,
+        degree: 'PhD',
+        specialization: 'Computer Science',
+        university: 'Stanford University',
+        program: 'Computer Science',
+        year: '2020',
+        is_research: true,
+        dissertation_title: 'Advanced Machine Learning Techniques',
+        abstract: 'Research on advanced ML algorithms'
+      },
+      {
+        id: 2,
+        degree: 'MSc',
+        specialization: 'Data Science',
+        university: 'MIT',
+        program: 'Data Science',
+        year: '2018',
+        is_research: false
+      }
+    ];
+
+    setEducation(sampleData);
+    setLoading(false);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setNewEducation({
-      ...newEducation,
+    setFormData({
+      ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    try {
+      setLoading(true);
+
+      if (editingId) {
+        // Update existing education
+        setEducation(prev => prev.map(edu =>
+          edu.id === editingId ? { ...formData, id: editingId } : edu
+        ));
+        setSuccess('Education updated successfully');
+      } else {
+        // Add new education
+        const newEducation = {
+          ...formData,
+          id: Date.now() // Generate a unique ID
+        };
+        setEducation(prev => [...prev, newEducation]);
+        setSuccess('Education added successfully');
+      }
+
+      // Reset form
+      setFormData(initialFormState);
+      setShowAddForm(false);
+      setEditingId(null);
+    } catch (err) {
+      setError('Failed to save education');
+      console.error('Error saving education:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (edu) => {
+    setFormData({
+      degree: edu.degree || '',
+      specialization: edu.specialization || '',
+      university: edu.university || '',
+      program: edu.program || '',
+      year: edu.year || new Date().getFullYear().toString(),
+      is_research: edu.is_research || false,
+      dissertation_title: edu.dissertation_title || '',
+      abstract: edu.abstract || ''
+    });
+    setEditingId(edu.id);
+    setShowAddForm(true);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this education record?')) {
+      try {
+        setLoading(true);
+        setEducation(prev => prev.filter(edu => edu.id !== id));
+        setSuccess('Education deleted successfully');
+      } catch (err) {
+        setError('Failed to delete education');
+        console.error('Error deleting education:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  if (loading && !showAddForm) {
+    return (
+      <Card className="mb-4">
+        <Card.Body className="text-center">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+          <p className="mt-2 mb-0">Loading education data...</p>
+        </Card.Body>
+      </Card>
+    );
+  }
 
   const degreeOptions = [
     'High School', 'Associate', 'Bachelor', 'Master', 'Ph.D.', 'Post Doc', 'Other'
   ];
 
+  // You might want to fetch this from the backend in a real app
   const universityOptions = [
     'Stanford University', 'MIT', 'Harvard University', 'Caltech', 'Oxford University', 'Other'
   ];
+  
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+  };
 
   return (
     <Card className="mb-4">
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h5 className="section-title mb-0">Educational Qualifications</h5>
-          {isEditing && (
+          {isEditing && !showAddForm && (
             <Button 
               variant="outline-primary" 
               size="sm"
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => setShowAddForm(true)}
+              disabled={loading}
             >
               <FaPlus className="me-1" /> Add Education
             </Button>
           )}
         </div>
+        
+        {error && <Alert variant="danger">{error}</Alert>}
+        {success && <Alert variant="success">{success}</Alert>}
 
         {showAddForm && isEditing && (
           <Card className="mb-4 border-primary">
             <Card.Body>
               <h6 className="mb-3">Add New Education</h6>
-              <Row>
+              <Form onSubmit={handleSubmit}>
+                <Row>
                 <Col md={6} className="mb-3">
-                  <Form.Group>
-                    <Form.Label>Degree</Form.Label>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Degree <span className="text-danger">*</span></Form.Label>
                     <Form.Select 
                       name="degree" 
-                      value={newEducation.degree}
+                      value={formData.degree}
                       onChange={handleInputChange}
+                      required
+                      disabled={loading}
                     >
                       <option value="">Select Degree</option>
                       {degreeOptions.map(degree => (
@@ -117,19 +203,23 @@ const EducationalInfo = ({ isEditing }) => {
                     <Form.Control 
                       type="text" 
                       name="specialization" 
-                      value={newEducation.specialization}
+                      value={formData.specialization}
                       onChange={handleInputChange}
                       placeholder="e.g., Computer Science"
+                      required
+                      disabled={loading}
                     />
                   </Form.Group>
                 </Col>
                 <Col md={6} className="mb-3">
                   <Form.Group>
-                    <Form.Label>University/Institution</Form.Label>
+                    <Form.Label>College/University</Form.Label>
                     <Form.Select 
                       name="university" 
-                      value={newEducation.university}
+                      value={formData.university}
                       onChange={handleInputChange}
+                      required
+                      disabled={loading}
                     >
                       <option value="">Select University</option>
                       {universityOptions.map(univ => (
@@ -144,9 +234,11 @@ const EducationalInfo = ({ isEditing }) => {
                     <Form.Control 
                       type="text" 
                       name="program" 
-                      value={newEducation.program}
+                      value={formData.program}
                       onChange={handleInputChange}
                       placeholder="e.g., Computer Science and Engineering"
+                      required
+                      disabled={loading}
                     />
                   </Form.Group>
                 </Col>
@@ -156,33 +248,39 @@ const EducationalInfo = ({ isEditing }) => {
                     <Form.Control 
                       type="number" 
                       name="year" 
-                      value={newEducation.year}
+                      value={formData.year}
                       onChange={handleInputChange}
                       placeholder="e.g., 2020"
+                      min="1900"
+                      max={new Date().getFullYear() + 5}
+                      required
+                      disabled={loading}
                     />
                   </Form.Group>
                 </Col>
                 <Col md={12} className="mb-3">
                   <Form.Check
                     type="checkbox"
-                    id="isResearch"
+                    id="is_research"
                     label="This is a research degree (Ph.D., M.Phil, etc.)"
-                    name="isResearch"
-                    checked={newEducation.isResearch}
+                    name="is_research"
+                    checked={formData.is_research}
                     onChange={handleInputChange}
+                    disabled={loading}
                   />
                 </Col>
-                {newEducation.isResearch && (
+                {formData.is_research && (
                   <>
                     <Col md={12} className="mb-3">
                       <Form.Group>
                         <Form.Label>Dissertation/Thesis Title</Form.Label>
                         <Form.Control 
                           type="text" 
-                          name="dissertationTitle" 
-                          value={newEducation.dissertationTitle}
+                          name="dissertation_title" 
+                          value={formData.dissertation_title}
                           onChange={handleInputChange}
                           placeholder="Title of your research work"
+                          disabled={loading}
                         />
                       </Form.Group>
                     </Col>
@@ -193,9 +291,10 @@ const EducationalInfo = ({ isEditing }) => {
                           as="textarea" 
                           rows={3} 
                           name="abstract" 
-                          value={newEducation.abstract}
+                          value={formData.abstract}
                           onChange={handleInputChange}
                           placeholder="Brief summary of your research work"
+                          disabled={loading}
                         />
                       </Form.Group>
                     </Col>
@@ -203,77 +302,88 @@ const EducationalInfo = ({ isEditing }) => {
                 )}
                 <Col md={12} className="text-end">
                   <Button 
-                    variant="outline-secondary" 
-                    className="me-2"
-                    onClick={() => setShowAddForm(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
+                    type="submit"
                     variant="primary"
-                    onClick={handleAddEducation}
-                    disabled={!newEducation.degree || !newEducation.university}
+                    disabled={!formData.degree || !formData.university || loading}
                   >
-                    Add Education
+                    {loading ? (
+                      <>
+                        <Spinner as="span" size="sm" animation="border" role="status" aria-hidden="true" className="me-2" />
+                        {editingId ? 'Updating...' : 'Adding...'}
+                      </>
+                    ) : editingId ? 'Update Education' : 'Add Education'}
                   </Button>
                 </Col>
               </Row>
-            </Card.Body>
-          </Card>
+            </Form>
+          </Card.Body>
+        </Card>
         )}
 
-        <Accordion defaultActiveKey="0" className="education-accordion">
-          {education.map((edu, index) => (
-            <Accordion.Item eventKey={index.toString()} key={edu.id} className="mb-2">
-              <Accordion.Header>
-                <div className="d-flex align-items-center w-100">
-                  <div className="me-3">
-                    {edu.isResearch ? (
-                      <FaBook className="text-primary" />
-                    ) : (
-                      <FaGraduationCap className="text-primary" />
+        {!showAddForm && education.length > 0 ? (
+          <Accordion className="education-accordion">
+            {education.map((edu, index) => (
+              <Accordion.Item eventKey={index.toString()} key={edu.id} className="mb-2">
+                <Accordion.Header>
+                  <div className="d-flex align-items-center w-100">
+                    <div className="me-3">
+                      {edu.is_research ? (
+                        <FaBook className="text-primary" />
+                      ) : (
+                        <FaGraduationCap className="text-primary" />
+                      )}
+                    </div>
+                    <div className="flex-grow-1">
+                      <h6 className="mb-0">{edu.degree} in {edu.specialization}</h6>
+                      <small className="text-muted">{edu.university} • {formatDate(edu.year)}</small>
+                    </div>
+                    {edu.is_research && (
+                      <Badge bg="info" className="me-2">Research</Badge>
                     )}
                   </div>
-                  <div className="flex-grow-1">
-                    <h6 className="mb-0">{edu.degree} in {edu.specialization}</h6>
-                    <small className="text-muted">{edu.university} • {edu.year}</small>
-                  </div>
-                  {edu.isResearch && (
-                    <Badge bg="info" className="me-2">Research</Badge>
-                  )}
-                </div>
-              </Accordion.Header>
-              <Accordion.Body>
-                <Row>
-                  <Col md={6}>
-                    <p><strong>Program:</strong> {edu.program}</p>
-                    <p><strong>University:</strong> {edu.university}</p>
-                    <p><strong>Year of Completion:</strong> {edu.year}</p>
-                  </Col>
-                  {edu.isResearch && (
+                </Accordion.Header>
+                <Accordion.Body>
+                  <Row>
                     <Col md={6}>
-                      <p><strong>Dissertation/ Thesis Title:</strong> {edu.dissertationTitle}</p>
-                      <p><strong>Abstract:</strong> {edu.abstract}</p>
+                      <p><strong>Program:</strong> {edu.program}</p>
+                      <p><strong>University:</strong> {edu.university}</p>
+                      <p><strong>Year of Completion:</strong> {formatDate(edu.year)}</p>
                     </Col>
+                    {edu.is_research && (
+                      <Col md={6}>
+                        <p><strong>Dissertation/ Thesis Title:</strong> {edu.dissertation_title}</p>
+                        <p><strong>Abstract:</strong> {edu.abstract}</p>
+                      </Col>
+                    )}
+                  </Row>
+                  {isEditing && (
+                    <div className="text-end mt-2">
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        className="me-2"
+                        onClick={() => handleEdit(edu)}
+                        disabled={loading}
+                      >
+                        <FaEdit className="me-1" /> Edit
+                      </Button>
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDelete(edu.id)}
+                        disabled={loading}
+                      >
+                        <FaTrash />
+                      </Button>
+                    </div>
                   )}
-                </Row>
-                {isEditing && (
-                  <div className="text-end mt-2">
-                    <Button 
-                      variant="outline-danger" 
-                      size="sm"
-                      onClick={() => handleRemoveEducation(edu.id)}
-                    >
-                      <FaTrash className="me-1" /> Remove
-                    </Button>
-                  </div>
-                )}
-              </Accordion.Body>
-            </Accordion.Item>
-          ))}
-        </Accordion>
+                </Accordion.Body>
+              </Accordion.Item>
+            ))}
+          </Accordion>
+        ) : null}
 
-        {education.length === 0 && (
+        {!showAddForm && education.length === 0 && (
           <div className="text-center py-4">
             <FaGraduationCap size={32} className="text-muted mb-2" />
             <p className="text-muted">No educational qualifications added yet.</p>
@@ -282,6 +392,7 @@ const EducationalInfo = ({ isEditing }) => {
                 variant="outline-primary" 
                 size="sm"
                 onClick={() => setShowAddForm(true)}
+                disabled={loading}
               >
                 <FaPlus className="me-1" /> Add Education
               </Button>

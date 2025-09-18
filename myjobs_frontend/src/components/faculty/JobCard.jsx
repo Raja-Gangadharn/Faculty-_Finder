@@ -21,8 +21,8 @@ const JobCard = ({
 
   // Calculate time ago
   useEffect(() => {
-    if (job.postedAt) {
-      const postedDate = new Date(job.postedAt);
+    const postedDate = job.created_at ? new Date(job.created_at) : null;
+    if (postedDate) {
       const now = new Date();
       const diffInDays = Math.floor((now - postedDate) / (1000 * 60 * 60 * 24));
       if (diffInDays === 0) setTimeAgo('Today');
@@ -31,7 +31,7 @@ const JobCard = ({
       else if (diffInDays < 30) setTimeAgo(`${Math.floor(diffInDays / 7)} weeks ago`);
       else setTimeAgo(postedDate.toLocaleDateString());
     }
-  }, [job.postedAt]);
+  }, [job.created_at]);
 
   const handleSaveClick = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -89,17 +89,41 @@ const JobCard = ({
           <div className="flex-grow-1">
             <div className="d-flex justify-content-between align-items-start mb-2">
               <div>
-                <h5 className="mb-1 fw-bold">
-                  <Link to={`/faculty/jobs/${job.id}`} className="text-decoration-none text-dark">
+                <Card.Title className="mb-3">
+                  <Link to={`/jobs/${job.id}`} className="text-decoration-none text-dark">
                     {job.title}
                   </Link>
-                </h5>
-                <div className="text-muted mb-2 small d-flex align-items-center flex-wrap">
-                  <Building size={14} className="me-1" />
-                  {job.department}
-                  <span className="mx-2">•</span>
-                  <GeoAlt size={14} className="me-1" />
-                  {job.location}
+                </Card.Title>
+                
+                <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                  <Badge bg="light" text="dark" className="d-flex align-items-center">
+                    <Building size={14} className="me-1" /> {job.department}
+                  </Badge>
+                  <Badge bg="light" text="dark" className="d-flex align-items-center">
+                    <Briefcase size={14} className="me-1" /> {job.job_type}
+                  </Badge>
+                  <Badge bg="light" text="dark" className="d-flex align-items-center">
+                    <GeoAlt size={14} className="me-1" /> {job.location}
+                  </Badge>
+                </div>
+
+                <div className="d-flex flex-wrap align-items-center gap-3 text-muted small mb-3">
+                  {job.salary && (
+                    <span className="d-flex align-items-center">
+                      <CurrencyDollar size={14} className="me-1" /> {job.salary}
+                    </span>
+                  )}
+                  {job.deadline && (
+                    <span className="d-flex align-items-center">
+                      <Calendar size={14} className="me-1" /> 
+                      Apply by {new Date(job.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                  {timeAgo && (
+                    <span className="d-flex align-items-center">
+                      <Clock size={14} className="me-1" /> {timeAgo}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="d-flex align-items-center">
@@ -116,36 +140,30 @@ const JobCard = ({
               </div>
             </div>
 
-            {/* Job Meta */}
-            <div className="job-meta d-flex flex-wrap gap-3 mb-3">
-              <div className="d-flex align-items-center text-muted small">
-                <Briefcase size={14} className="me-1 flex-shrink-0" />
-                {job.type}
-              </div>
-              <div className="d-flex align-items-center text-muted small">
-                <CurrencyDollar size={14} className="me-1 flex-shrink-0" />
-                {job.salary}
-              </div>
-              <div className="d-flex align-items-center text-muted small">
-                <Clock size={14} className="me-1 flex-shrink-0" />
-                {timeAgo}
-              </div>
-            </div>
-
-            {/* Tags and Deadline */}
-            <div className="d-flex flex-wrap justify-content-between align-items-center">
+            {/* Tags and Course */}
+            <div className="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-3 border-top">
               <div className="d-flex flex-wrap gap-2">
-                <Badge bg="primary" text="white" className="rounded-pill px-3 py-2">
-                  {job.course}
-                </Badge>
-                <Badge bg="info" text="white" className="rounded-pill px-3 py-2">
-                  {job.department}
-                </Badge>
+                {job.course && (
+                  <Badge bg="primary" text="white" className="rounded-pill px-3 py-2">
+                    {job.course}
+                  </Badge>
+                )}
+                {job.department && (
+                  <Badge bg="info" text="white" className="rounded-pill px-3 py-2">
+                    {job.department}
+                  </Badge>
+                )}
               </div>
-              <div className="text-muted small d-flex align-items-center mt-2 mt-sm-0">
-                <Calendar size={14} className="me-1 flex-shrink-0" />
-                Apply by: {job.deadline}
-              </div>
+              {job.deadline && (
+                <div className="text-muted small d-flex align-items-center mt-2 mt-sm-0">
+                  <Calendar size={14} className="me-1 flex-shrink-0" />
+                  <span>Apply by: {new Date(job.deadline).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

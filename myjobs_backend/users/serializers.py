@@ -1,6 +1,30 @@
 from rest_framework import serializers
 from .models import CustomUser, FacultyProfile, RecruiterProfile
 
+
+class UserSerializer(serializers.ModelSerializer):
+    first_name = serializers.SerializerMethodField()
+    last_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'first_name', 'last_name', 'is_faculty', 'is_recruiter']
+        read_only_fields = ['id', 'is_faculty', 'is_recruiter']
+    
+    def get_first_name(self, obj):
+        if hasattr(obj, 'facultyprofile'):
+            return obj.facultyprofile.first_name
+        elif hasattr(obj, 'recruiterprofile'):
+            return obj.recruiterprofile.first_name
+        return None
+    
+    def get_last_name(self, obj):
+        if hasattr(obj, 'facultyprofile'):
+            return obj.facultyprofile.last_name
+        elif hasattr(obj, 'recruiterprofile'):
+            return obj.recruiterprofile.last_name
+        return None
+
 class FacultyRegistrationSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
