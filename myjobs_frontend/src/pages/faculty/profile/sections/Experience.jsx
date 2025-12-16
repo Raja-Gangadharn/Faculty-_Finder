@@ -1,222 +1,529 @@
-import React, { useState } from 'react';
-import { Card, Button, Row, Col, Form, Tabs, Tab, Badge, ListGroup } from 'react-bootstrap';
-import { FaPlus, FaTrash, FaBriefcase, FaUniversity, FaCalendarAlt, FaEdit, FaCheck } from 'react-icons/fa';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Card, Button, Row, Col, Form, Tabs, Tab, Badge, ListGroup, Spinner, Alert, Modal } from 'react-bootstrap';
+import { FaPlus, FaTrash, FaBriefcase, FaUniversity, FaCalendarAlt, FaEdit, FaCheck, FaSpinner } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import facultyService from '../../../../services/facultyService';
 
-const Experience = ({ isEditing }) => {
-  // Academic Experience
-  const [academicExperience, setAcademicExperience] = useState([
-    {
-      id: 1,
-      institution: 'Stanford University',
-      position: 'Associate Professor',
-      responsibilities: [
-        'Teaching advanced courses in Machine Learning and AI',
-        'Supervising graduate student research',
-        'Leading research projects in AI ethics'
-      ],
-      startDate: '2018-06-01',
-      endDate: '',
-      isCurrent: true
+// Format date for display
+const formatDate = (dateString) => {
+  if (!dateString) return 'Present';
+
+  try {
+    // Handle different date string formats
+    let date;
+    if (typeof dateString === 'string') {
+      // Try parsing ISO date string
+      if (dateString.includes('T')) {
+        date = new Date(dateString);
+      }
+      // Handle YYYY-MM-DD format
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        date = new Date(dateString);
+      }
+      // Handle other formats by trying to parse as is
+      else {
+        date = new Date(dateString);
+      }
+    } else if (dateString instanceof Date) {
+      date = dateString;
+    } else {
+      console.error('Invalid date format:', dateString);
+      return 'Present';
     }
-  ]);
 
-  // Non-Academic Experience
-  const [nonAcademicExperience, setNonAcademicExperience] = useState([
-    {
-      id: 1,
-      company: 'Tech Solutions Inc.',
-      position: 'Senior Software Engineer',
-      responsibilities: [
-        'Led a team of developers',
-        'Designed and implemented scalable systems',
-        'Mentored junior developers'
-      ],
-      startDate: '2010-06-01',
-      endDate: '2012-07-31',
-      isCurrent: false
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return 'Present';
     }
-  ]);
 
-  // Overall Experience
-  const [overallExperience, setOverallExperience] = useState([
-    { id: 1, type: 'Teaching Experience', range: '11-15' }
-  ]);
+    const options = { year: 'numeric', month: 'short' };
+    return date.toLocaleDateString('en-US', options);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Present';
+  }
+};
+
+const Experience = forwardRef(({ isEditing }, ref) => {
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    // Add any methods you want to expose to parent components here
+    refresh: () => {
+      fetchExperiences();
+    }
+  }));
+
+  // State for experiences and delete confirmation
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [experienceToDelete, setExperienceToDelete] = useState({ id: null, type: null });
+  const [academicExperience, setAcademicExperience] = useState([]);
+  const [nonAcademicExperience, setNonAcademicExperience] = useState([]);
+  const [overallExperience, setOverallExperience] = useState({ teaching: 0, industry: 0, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Form States
   const [showAcademicForm, setShowAcademicForm] = useState(false);
   const [showNonAcademicForm, setShowNonAcademicForm] = useState(false);
   const [showOverallForm, setShowOverallForm] = useState(false);
 
-  const [newAcademicExp, setNewAcademicExp] = useState({
-    institution: '',
-    position: '',
-    responsibilities: [''],
-    startDate: '',
-    endDate: '',
-    isCurrent: false
-  });
+  // Current experience being edited
+  const [editingId, setEditingId] = useState(null);
+  const [isAcademic, setIsAcademic] = useState(true);
 
-  const [newNonAcademicExp, setNewNonAcademicExp] = useState({
+  const [formData, setFormData] = useState({
+    institution: '',
     company: '',
     position: '',
     responsibilities: [''],
     startDate: '',
     endDate: '',
-    isCurrent: false
+    experience_type: 'academic' // 'academic' or 'non_academic'
   });
 
-  const [newOverallExp, setNewOverallExp] = useState({
-    type: 'Teaching Experience',
-    range: '0-5'
-  });
+  // Calculate total experience in months
+  const calculateExperience = (startDate, endDate, isCurrent = false) => {
+    if (!startDate) return 0;
 
-  // Handle Input Changes
-  const handleAcademicInputChange = (e) => {
+    const start = new Date(startDate);
+    const end = isCurrent || !endDate ? new Date() : new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      console.error('Invalid date range:', { startDate, endDate, isCurrent });
+      return 0;
+    }
+
+    // Calculate months between dates
+    let months = (end.getFullYear() - start.getFullYear()) * 12;
+    months -= start.getMonth() + 1;
+    months += end.getMonth() + 1;
+
+    // If end date is the last day of the month, include it
+    const lastDayOfMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+    if (end.getDate() === lastDayOfMonth) {
+      months += 1;
+    }
+
+    return Math.max(0, months);
+  };
+
+  // Calculate total experience from all entries
+  const calculateTotalExperience = (experiences) => {
+    return experiences.reduce((total, exp) => {
+      return total + calculateExperience(exp.start_date, exp.end_date, exp.is_current);
+    }, 0);
+  };
+
+  // Convert months of experience to a range string with decimal precision
+  const getExperienceRange = (months) => {
+    const years = months / 12; // Keep as decimal for more precise ranges
+
+    if (years < 0.5) return '0-6 months';
+    if (years < 1) return '6 months - 1 year';
+    if (years < 2) return '1-2 years';
+    if (years < 3) return '2-3 years';
+    if (years < 5) return '3-5 years';
+    if (years < 7) return '5-7 years';
+    if (years < 10) return '7-10 years';
+    if (years < 15) return '10-15 years';
+    return '15+ years';
+  };
+
+  // Update overall experience whenever academic or non-academic experiences change
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId = null;
+
+    const updateExperience = () => {
+      const teachingMonths = calculateTotalExperience(academicExperience);
+      const industryMonths = calculateTotalExperience(nonAcademicExperience);
+      const totalMonths = teachingMonths + industryMonths;
+
+      // Calculate years with decimal precision
+      const teachingYears = teachingMonths / 12;
+      const industryYears = industryMonths / 12;
+      const totalYears = totalMonths / 12;
+
+      if (isMounted) {
+        setOverallExperience({
+          teaching: parseFloat(teachingYears.toFixed(1)),
+          industry: parseFloat(industryYears.toFixed(1)),
+          total: parseFloat(totalYears.toFixed(1)),
+          totalMonths: totalMonths
+        });
+      }
+    };
+
+    const handleUpdate = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      timeoutId = setTimeout(updateExperience, 100);
+    };
+
+    // Debounce the update to prevent rapid recalculations
+    handleUpdate();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [academicExperience, nonAcademicExperience]);
+
+  // Fetch experiences from backend
+  const fetchExperiences = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      console.log('Fetching experiences...');
+      const response = await facultyService.getExperiences();
+      console.log('API Response:', response);
+
+      // Ensure response is an array and handle potential nested data structure
+      let experiences = [];
+      if (Array.isArray(response)) {
+        experiences = response;
+      } else if (response && Array.isArray(response.data)) {
+        experiences = response.data;
+      } else if (response && response.results && Array.isArray(response.results)) {
+        experiences = response.results;
+      }
+
+      console.log('Processed experiences:', experiences);
+
+      // Process and filter experiences by type
+      const academic = experiences
+        .filter(exp => exp.exp_type === 'academic')
+        .map(exp => ({
+          ...exp,
+          id: exp.id || exp._id || Date.now(),
+          start_date: exp.start_date || exp.startDate,
+          end_date: exp.end_date || exp.endDate,
+          is_current: exp.is_current || exp.isCurrent || false,
+          institution_or_company: exp.institution_or_company || exp.institution || exp.company || ''
+        }));
+
+      const nonAcademic = experiences
+        .filter(exp => exp.exp_type === 'non_academic')
+        .map(exp => ({
+          ...exp,
+          id: exp.id || exp._id || Date.now(),
+          start_date: exp.start_date || exp.startDate,
+          end_date: exp.end_date || exp.endDate,
+          is_current: exp.is_current || exp.isCurrent || false,
+          institution_or_company: exp.institution_or_company || exp.company || exp.institution || ''
+        }));
+
+      console.log('Academic experiences:', academic);
+      console.log('Non-academic experiences:', nonAcademic);
+
+      setAcademicExperience(academic);
+      setNonAcademicExperience(nonAcademic);
+    } catch (err) {
+      console.error('Error fetching experiences:', err);
+      setError('Failed to load experiences. Please try again.');
+      toast.error('Failed to load experiences');
+
+      // Set empty arrays in case of error to prevent further errors
+      setAcademicExperience([]);
+      setNonAcademicExperience([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchExperiences();
+  }, []);
+
+  // Handle input changes
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setNewAcademicExp({
-      ...newAcademicExp,
+    setFormData({
+      ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
   };
 
-  const handleNonAcademicInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setNewNonAcademicExp({
-      ...newNonAcademicExp,
-      [name]: type === 'checkbox' ? checked : value
-    });
-  };
-
-  const handleOverallInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewOverallExp({
-      ...newOverallExp,
-      [name]: value
-    });
-  };
-
-  // Handle Responsibility Changes
-  const handleAcademicResponsibilityChange = (index, value) => {
-    const updatedResponsibilities = [...newAcademicExp.responsibilities];
+  // Handle responsibility changes
+  const handleResponsibilityChange = (index, value) => {
+    const updatedResponsibilities = [...formData.responsibilities];
     updatedResponsibilities[index] = value;
-    setNewAcademicExp({
-      ...newAcademicExp,
-      responsibilities: updatedResponsibilities
+    setFormData({
+      ...formData,
+      responsibilities: updatedResponsibilities.filter(r => r !== '')
     });
   };
 
-  const handleNonAcademicResponsibilityChange = (index, value) => {
-    const updatedResponsibilities = [...newNonAcademicExp.responsibilities];
-    updatedResponsibilities[index] = value;
-    setNewNonAcademicExp({
-      ...newNonAcademicExp,
-      responsibilities: updatedResponsibilities
+  // Add a new responsibility field
+  const addResponsibility = () => {
+    setFormData({
+      ...formData,
+      responsibilities: [...formData.responsibilities, '']
     });
   };
 
-  // Add Responsibility
-  const addResponsibility = (type) => {
-    if (type === 'academic') {
-      setNewAcademicExp({
-        ...newAcademicExp,
-        responsibilities: [...newAcademicExp.responsibilities, '']
-      });
-    } else {
-      setNewNonAcademicExp({
-        ...newNonAcademicExp,
-        responsibilities: [...newNonAcademicExp.responsibilities, '']
-      });
-    }
+  // Remove a responsibility field
+  const removeResponsibility = (index) => {
+    const updatedResponsibilities = formData.responsibilities.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      responsibilities: updatedResponsibilities.length ? updatedResponsibilities : ['']
+    });
   };
 
-  // Remove Responsibility
-  const removeResponsibility = (index, type) => {
-    if (type === 'academic') {
-      const updatedResponsibilities = [...newAcademicExp.responsibilities];
-      updatedResponsibilities.splice(index, 1);
-      setNewAcademicExp({
-        ...newAcademicExp,
-        responsibilities: updatedResponsibilities
-      });
-    } else {
-      const updatedResponsibilities = [...newNonAcademicExp.responsibilities];
-      updatedResponsibilities.splice(index, 1);
-      setNewNonAcademicExp({
-        ...newNonAcademicExp,
-        responsibilities: updatedResponsibilities
-      });
-    }
-  };
-
-  // Add Experience
-  const addAcademicExperience = () => {
-    setAcademicExperience([
-      {
-        ...newAcademicExp,
-        id: Date.now(),
-        responsibilities: newAcademicExp.responsibilities.filter(r => r.trim() !== '')
-      },
-      ...academicExperience
-    ]);
-    setNewAcademicExp({
+  // Reset form
+  const resetForm = () => {
+    setFormData({
       institution: '',
-      position: '',
-      responsibilities: [''],
-      startDate: '',
-      endDate: '',
-      isCurrent: false
-    });
-    setShowAcademicForm(false);
-  };
-
-  const addNonAcademicExperience = () => {
-    setNonAcademicExperience([
-      {
-        ...newNonAcademicExp,
-        id: Date.now(),
-        responsibilities: newNonAcademicExp.responsibilities.filter(r => r.trim() !== '')
-      },
-      ...nonAcademicExperience
-    ]);
-    setNewNonAcademicExp({
       company: '',
       position: '',
       responsibilities: [''],
       startDate: '',
       endDate: '',
-      isCurrent: false
+      isCurrent: false,
+      experience_type: isAcademic ? 'academic' : 'non_academic'
     });
-    setShowNonAcademicForm(false);
+    setEditingId(null);
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      // Prepare the data for submission
+      const experienceData = {
+        institution: formData.institution,
+        company: formData.company,
+        position: formData.position,
+        responsibilities: formData.responsibilities.filter(r => r.trim() !== ''),
+        start_date: formData.startDate,
+        end_date: formData.isCurrent ? null : formData.endDate,
+        is_current: formData.isCurrent,
+        experience_type: isAcademic ? 'academic' : 'non_academic'
+      };
+
+      // Remove empty strings from responsibilities
+      experienceData.responsibilities = experienceData.responsibilities.filter(r => r.trim() !== '');
+
+      if (editingId) {
+        // Update existing experience
+        await facultyService.updateExperience(editingId, experienceData);
+      } else {
+        // Create new experience
+        await facultyService.createExperience(experienceData);
+      }
+
+      // Refresh the list and reset form
+      await fetchExperiences();
+      resetForm();
+      setShowAcademicForm(false);
+      setShowNonAcademicForm(false);
+
+    } catch (err) {
+      console.error('Error saving experience:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to save experience. Please try again.';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle edit action
+  const handleEdit = (exp, isAcademicExp = true) => {
+    setFormData({
+      institution: exp.institution || '',
+      company: exp.company || '',
+      position: exp.position || '',
+      responsibilities: exp.responsibilities?.length ? exp.responsibilities : [''],
+      startDate: exp.start_date || '',
+      endDate: exp.end_date || '',
+      isCurrent: exp.is_current || false,
+      experience_type: exp.experience_type || (isAcademicExp ? 'academic' : 'non_academic')
+    });
+
+    setEditingId(exp.id);
+    setIsAcademic(isAcademicExp);
+
+    if (isAcademicExp) {
+      setShowAcademicForm(true);
+      setShowNonAcademicForm(false);
+    } else {
+      setShowAcademicForm(false);
+      setShowNonAcademicForm(true);
+    }
+  };
+
+  // Handle delete action
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this experience?')) {
+      try {
+        setLoading(true);
+        await facultyService.deleteExperience(id);
+        await fetchExperiences();
+      } catch (err) {
+        console.error('Error deleting experience:', err);
+        const errorMsg = err.response?.data?.message || 'Failed to delete experience. Please try again.';
+        toast.error(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Expose save method to parent
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      // No need to show success message here as it will be handled by the parent
+      // and we don't want duplicate messages
+      return { ok: true };
+    }
+  }));
+
+  // Format experience range
+  const formatExperienceRange = (years) => {
+    if (years === 0) return 'Less than a year';
+    if (years < 1) return 'Less than a year';
+    if (years === 1) return '1 year';
+    if (years < 2) return '1-2 years';
+    if (years < 5) return '2-5 years';
+    if (years < 10) return '5-10 years';
+    return '10+ years';
+  };
+
+  const handleNonAcademicResponsibilityChange = (index, value) => {
+    const updatedResponsibilities = [...formData.responsibilities];
+    updatedResponsibilities[index] = value;
+    setFormData({
+      ...formData,
+      responsibilities: updatedResponsibilities
+    });
+  };
+
+
+  // Add Academic Experience
+  const addAcademicExperience = async () => {
+    try {
+      setLoading(true);
+      const experienceData = {
+        institution_or_company: formData.institution,
+        position: formData.position,
+        responsibilities: formData.responsibilities.filter(r => r.trim() !== '').join('\n'),
+        start_date: formData.startDate,
+        end_date: formData.isCurrent ? null : formData.endDate,
+        is_current: formData.isCurrent,
+        exp_type: 'academic'  // Changed from experience_type to exp_type to match backend
+      };
+
+      await facultyService.createExperience(experienceData);
+      await fetchExperiences();
+      resetForm();
+      setShowAcademicForm(false);
+    } catch (err) {
+      console.error('Error adding academic experience:', err);
+      console.error('Error details:', err.response?.data);
+      const errorMsg = err.response?.data?.message || 'Failed to add academic experience. Please try again.';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add Non-Academic Experience
+  const addNonAcademicExperience = async () => {
+    try {
+      setLoading(true);
+      const experienceData = {
+        institution_or_company: formData.company,
+        position: formData.position,
+        responsibilities: formData.responsibilities.filter(r => r.trim() !== '').join('\n'),
+        start_date: formData.startDate,
+        end_date: formData.isCurrent ? null : formData.endDate,
+        is_current: formData.isCurrent,
+        exp_type: 'non_academic'  // Changed from experience_type to exp_type to match backend
+      };
+
+      await facultyService.createExperience(experienceData);
+      await fetchExperiences();
+      resetForm();
+      setShowNonAcademicForm(false);
+    } catch (err) {
+      console.error('Error adding professional experience:', err);
+      console.error('Error details:', err.response?.data);
+      const errorMsg = err.response?.data?.message || 'Failed to add professional experience. Please try again.';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addOverallExperience = () => {
     setOverallExperience([
       ...overallExperience,
-      { ...newOverallExp, id: Date.now() }
+      {
+        type: formData.overallType || 'Teaching Experience',
+        range: formData.overallRange || '1-3 years',
+        id: Date.now()
+      }
     ]);
-    setNewOverallExp({
-      type: 'Teaching Experience',
+
+    // Reset the form
+    setFormData({
+      ...formData,
+      overallType: 'Teaching Experience',
+      overallRange: '1-3 years',
       range: '0-5'
     });
     setShowOverallForm(false);
   };
 
-  // Remove Experience
-  const removeExperience = (id, type) => {
-    if (type === 'academic') {
-      setAcademicExperience(academicExperience.filter(exp => exp.id !== id));
-    } else if (type === 'nonAcademic') {
-      setNonAcademicExperience(nonAcademicExperience.filter(exp => exp.id !== id));
-    } else {
-      setOverallExperience(overallExperience.filter(exp => exp.id !== id));
+  // Show delete confirmation modal
+  const confirmDelete = (id, type) => {
+    setExperienceToDelete({ id, type });
+    setShowDeleteModal(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirmed = async () => {
+    const { id, type } = experienceToDelete;
+    setShowDeleteModal(false);
+
+    try {
+      setLoading(true);
+      await facultyService.deleteExperience(id);
+
+      // Update local state after successful deletion
+      if (type === 'academic') {
+        setAcademicExperience(prev => prev.filter(exp => exp.id !== id));
+      } else if (type === 'nonAcademic') {
+        setNonAcademicExperience(prev => prev.filter(exp => exp.id !== id));
+      } else {
+        setOverallExperience(prev => prev.filter(exp => exp.id !== id));
+      }
+
+      toast.success('Experience deleted successfully');
+    } catch (err) {
+      console.error('Error deleting experience:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to delete experience. Please try again.';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+      setExperienceToDelete({ id: null, type: null });
     }
   };
 
-  // Format Date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Present';
-    const options = { year: 'numeric', month: 'short' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+  // Close delete confirmation modal
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setExperienceToDelete({ id: null, type: null });
   };
 
   // Experience Ranges
@@ -233,15 +540,15 @@ const Experience = ({ isEditing }) => {
     <Card className="mb-4">
       <Card.Body>
         <h5 className="section-title mb-4">Experience</h5>
-        
+
         <Tabs defaultActiveKey="academic" id="experience-tabs" className="mb-4">
           {/* Academic Experience Tab */}
           <Tab eventKey="academic" title="Academic Experience">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h6 className="mb-0">Academic Positions</h6>
               {isEditing && (
-                <Button 
-                  variant="outline-primary" 
+                <Button
+                  variant="outline-primary"
                   size="sm"
                   onClick={() => setShowAcademicForm(!showAcademicForm)}
                 >
@@ -258,11 +565,11 @@ const Experience = ({ isEditing }) => {
                     <Col md={6} className="mb-3">
                       <Form.Group>
                         <Form.Label>Institution</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          name="institution" 
-                          value={newAcademicExp.institution}
-                          onChange={handleAcademicInputChange}
+                        <Form.Control
+                          type="text"
+                          name="institution"
+                          value={formData.institution}
+                          onChange={handleInputChange}
                           placeholder="e.g., Stanford University"
                         />
                       </Form.Group>
@@ -270,41 +577,40 @@ const Experience = ({ isEditing }) => {
                     <Col md={6} className="mb-3">
                       <Form.Group>
                         <Form.Label>Position/Title</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          name="position" 
-                          value={newAcademicExp.position}
-                          onChange={handleAcademicInputChange}
+                        <Form.Control
+                          type="text"
+                          name="position"
+                          value={formData.position}
+                          onChange={handleInputChange}
                           placeholder="e.g., Associate Professor"
                         />
                       </Form.Group>
                     </Col>
                     <Col md={12} className="mb-3">
                       <Form.Label>Responsibilities</Form.Label>
-                      {newAcademicExp.responsibilities.map((resp, index) => (
+                      {formData.responsibilities.map((resp, index) => (
                         <div key={index} className="d-flex mb-2">
                           <Form.Control
                             as="textarea"
                             rows={2}
                             value={resp}
-                            onChange={(e) => handleAcademicResponsibilityChange(index, e.target.value)}
+                            onChange={(e) => handleResponsibilityChange(index, e.target.value)}
                             placeholder="Describe your responsibilities"
                           />
-                          <Button 
-                            variant="outline-danger" 
+                          <Button
+                            variant="outline-danger"
                             className="ms-2"
-                            onClick={() => removeResponsibility(index, 'academic')}
-                            disabled={newAcademicExp.responsibilities.length <= 1}
+                            onClick={() => removeResponsibility(index)}
                           >
                             <FaTrash />
                           </Button>
                         </div>
                       ))}
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
                         className="mt-2"
-                        onClick={() => addResponsibility('academic')}
+                        onClick={addResponsibility}
                       >
                         <FaPlus className="me-1" /> Add Responsibility
                       </Button>
@@ -312,58 +618,51 @@ const Experience = ({ isEditing }) => {
                     <Col md={3} className="mb-3">
                       <Form.Group>
                         <Form.Label>Start Date</Form.Label>
-                        <Form.Control 
-                          type="date" 
-                          name="startDate" 
-                          value={newAcademicExp.startDate}
-                          onChange={handleAcademicInputChange}
+                        <Form.Control
+                          type="date"
+                          name="startDate"
+                          value={formData.startDate}
+                          onChange={handleInputChange}
                         />
                       </Form.Group>
                     </Col>
                     <Col md={3} className="mb-3">
                       <Form.Group>
                         <Form.Label>End Date</Form.Label>
-                        <Form.Control 
-                          type="date" 
-                          name="endDate" 
-                          value={newAcademicExp.endDate}
-                          onChange={handleAcademicInputChange}
-                          disabled={newAcademicExp.isCurrent}
-                          min={newAcademicExp.startDate}
-                        />
-                        <Form.Check
-                          type="checkbox"
-                          id="academicIsCurrent"
-                          label="I currently work here"
-                          name="isCurrent"
-                          checked={newAcademicExp.isCurrent}
-                          onChange={(e) => {
-                            handleAcademicInputChange(e);
-                            if (e.target.checked) {
-                              setNewAcademicExp(prev => ({
-                                ...prev,
-                                endDate: ''
-                              }));
-                            }
-                          }}
-                          className="mt-2"
+                        <Form.Control
+                          type="date"
+                          name="endDate"
+                          value={formData.endDate}
+                          onChange={handleInputChange}
+                          disabled={formData.isCurrent}
                         />
                       </Form.Group>
                     </Col>
+                    <Col md={6} className="mb-3 d-flex align-items-end">
+                      <Form.Check
+                        type="checkbox"
+                        id="isCurrent"
+                        name="isCurrent"
+                        label="I currently work here"
+                        checked={formData.isCurrent}
+                        onChange={handleInputChange}
+                        className="ms-2"
+                      />
+                    </Col>
                     <Col md={12} className="text-end">
-                      <Button 
-                        variant="outline-secondary" 
+                      <Button
+                        variant="outline-secondary"
                         className="me-2"
                         onClick={() => setShowAcademicForm(false)}
                       >
                         Cancel
                       </Button>
-                      <Button 
+                      <Button
                         variant="primary"
                         onClick={addAcademicExperience}
-                        disabled={!newAcademicExp.institution || !newAcademicExp.position || !newAcademicExp.startDate}
+                        disabled={!formData.institution || !formData.position || !formData.startDate}
                       >
-                        Add Position
+                        {editingId ? 'Update Position' : 'Add Position'}
                       </Button>
                     </Col>
                   </Row>
@@ -380,7 +679,7 @@ const Experience = ({ isEditing }) => {
                         <h6 className="mb-1">{exp.position}</h6>
                         <p className="mb-1 text-muted">
                           <FaUniversity className="me-1" />
-                          {exp.institution}
+                          {exp.institution_or_company}
                         </p>
                         <p className="mb-0 text-muted small">
                           <FaCalendarAlt className="me-1" />
@@ -389,22 +688,37 @@ const Experience = ({ isEditing }) => {
                             <Badge bg="success" className="ms-2">Current</Badge>
                           )}
                         </p>
-                        {exp.responsibilities && exp.responsibilities.length > 0 && (
+                        {exp.responsibilities && (
                           <div className="mt-2">
                             <p className="mb-1 small"><strong>Key Responsibilities:</strong></p>
                             <ul className="small">
-                              {exp.responsibilities.map((resp, i) => (
-                                <li key={i}>{resp}</li>
-                              ))}
+                              {typeof exp.responsibilities === 'string'
+                                ? exp.responsibilities
+                                  .split('\n')
+                                  .filter(r => r.trim() !== '')
+                                  .map((resp, i) => (
+                                    <li key={i}>{resp}</li>
+                                  ))
+                                : Array.isArray(exp.responsibilities)
+                                  ? exp.responsibilities
+                                    .filter(r => r && r.trim() !== '')
+                                    .map((resp, i) => (
+                                      <li key={i}>{resp}</li>
+                                    ))
+                                  : null
+                              }
                             </ul>
                           </div>
                         )}
                       </div>
                       {isEditing && (
-                        <Button 
-                          variant="outline-danger" 
+                        <Button
+                          variant="outline-danger"
                           size="sm"
-                          onClick={() => removeExperience(exp.id, 'academic')}
+                          className="ms-2"
+                          onClick={() => confirmDelete(exp.id, 'academic')}
+                          disabled={loading}
+                          title="Delete experience"
                         >
                           <FaTrash />
                         </Button>
@@ -418,8 +732,8 @@ const Experience = ({ isEditing }) => {
                 <FaUniversity size={32} className="text-muted mb-2" />
                 <p className="text-muted">No academic experience added yet.</p>
                 {isEditing && (
-                  <Button 
-                    variant="outline-primary" 
+                  <Button
+                    variant="outline-primary"
                     size="sm"
                     onClick={() => setShowAcademicForm(true)}
                   >
@@ -435,8 +749,8 @@ const Experience = ({ isEditing }) => {
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h6 className="mb-0">Professional Experience</h6>
               {isEditing && (
-                <Button 
-                  variant="outline-primary" 
+                <Button
+                  variant="outline-primary"
                   size="sm"
                   onClick={() => setShowNonAcademicForm(!showNonAcademicForm)}
                 >
@@ -453,11 +767,11 @@ const Experience = ({ isEditing }) => {
                     <Col md={6} className="mb-3">
                       <Form.Group>
                         <Form.Label>Company/Organization</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          name="company" 
-                          value={newNonAcademicExp.company}
-                          onChange={handleNonAcademicInputChange}
+                        <Form.Control
+                          type="text"
+                          name="company"
+                          value={formData.company}
+                          onChange={handleInputChange}
                           placeholder="e.g., Google Inc."
                         />
                       </Form.Group>
@@ -465,75 +779,79 @@ const Experience = ({ isEditing }) => {
                     <Col md={6} className="mb-3">
                       <Form.Group>
                         <Form.Label>Position/Title</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          name="position" 
-                          value={newNonAcademicExp.position}
-                          onChange={handleNonAcademicInputChange}
+                        <Form.Control
+                          type="text"
+                          name="position"
+                          value={formData.position}
+                          onChange={handleInputChange}
                           placeholder="e.g., Senior Software Engineer"
                         />
                       </Form.Group>
                     </Col>
                     <Col md={12} className="mb-3">
                       <Form.Label>Responsibilities</Form.Label>
-                      {newNonAcademicExp.responsibilities.map((resp, index) => (
-                        <div key={index} className="d-flex mb-2">
-                          <Form.Control
-                            as="textarea"
-                            rows={2}
-                            value={resp}
-                            onChange={(e) => handleNonAcademicResponsibilityChange(index, e.target.value)}
-                            placeholder="Describe your responsibilities"
-                          />
-                          <Button 
-                            variant="outline-danger" 
-                            className="ms-2"
-                            onClick={() => removeResponsibility(index, 'nonAcademic')}
-                            disabled={newNonAcademicExp.responsibilities.length <= 1}
-                          >
-                            <FaTrash />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={() => addResponsibility('nonAcademic')}
-                      >
-                        <FaPlus className="me-1" /> Add Responsibility
-                      </Button>
+                      <div className="mb-3">
+                        {formData.responsibilities.map((resp, index) => (
+                          <div key={index} className="d-flex mb-2">
+                            <Form.Control
+                              as="textarea"
+                              rows={2}
+                              value={resp}
+                              onChange={(e) => handleNonAcademicResponsibilityChange(index, e.target.value)}
+                              placeholder="Describe your responsibilities"
+                              className="me-2"
+                            />
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => removeResponsibility(index)}
+                              disabled={formData.responsibilities.length <= 1}
+                              className="align-self-start mt-1"
+                            >
+                              <FaTrash />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => addResponsibility('nonAcademic')}
+                          className="mt-2"
+                        >
+                          <FaPlus className="me-1" /> Add Responsibility
+                        </Button>
+                      </div>
                     </Col>
                     <Col md={3} className="mb-3">
                       <Form.Group>
                         <Form.Label>Start Date</Form.Label>
-                        <Form.Control 
-                          type="date" 
-                          name="startDate" 
-                          value={newNonAcademicExp.startDate}
-                          onChange={handleNonAcademicInputChange}
+                        <Form.Control
+                          type="date"
+                          name="startDate"
+                          value={formData.startDate}
+                          onChange={handleInputChange}
                         />
                       </Form.Group>
                     </Col>
                     <Col md={3} className="mb-3">
                       <Form.Group>
                         <Form.Label>End Date</Form.Label>
-                        <Form.Control 
-                          type="date" 
-                          name="endDate" 
-                          value={newNonAcademicExp.endDate}
-                          onChange={handleNonAcademicInputChange}
-                          disabled={newNonAcademicExp.isCurrent}
-                          min={newNonAcademicExp.startDate}
+                        <Form.Control
+                          type="date"
+                          name="endDate"
+                          value={formData.endDate}
+                          onChange={handleInputChange}
+                          disabled={formData.isCurrent}
+                          min={formData.startDate}
                         />
                         <Form.Check
                           type="checkbox"
                           id="nonAcademicIsCurrent"
                           label="I currently work here"
                           name="isCurrent"
-                          checked={newNonAcademicExp.isCurrent}
+                          checked={formData.isCurrent}
                           onChange={(e) => {
-                            handleNonAcademicInputChange(e);
+                            handleInputChange(e);
                             if (e.target.checked) {
                               setNewNonAcademicExp(prev => ({
                                 ...prev,
@@ -546,17 +864,17 @@ const Experience = ({ isEditing }) => {
                       </Form.Group>
                     </Col>
                     <Col md={12} className="text-end">
-                      <Button 
-                        variant="outline-secondary" 
+                      <Button
+                        variant="outline-secondary"
                         className="me-2"
                         onClick={() => setShowNonAcademicForm(false)}
                       >
                         Cancel
                       </Button>
-                      <Button 
+                      <Button
                         variant="primary"
                         onClick={addNonAcademicExperience}
-                        disabled={!newNonAcademicExp.company || !newNonAcademicExp.position || !newNonAcademicExp.startDate}
+                        disabled={!formData.company || !formData.position || !formData.startDate}
                       >
                         Add Experience
                       </Button>
@@ -575,7 +893,7 @@ const Experience = ({ isEditing }) => {
                         <h6 className="mb-1">{exp.position}</h6>
                         <p className="mb-1 text-muted">
                           <FaBriefcase className="me-1" />
-                          {exp.company}
+                          {exp.institution_or_company}
                         </p>
                         <p className="mb-0 text-muted small">
                           <FaCalendarAlt className="me-1" />
@@ -584,21 +902,34 @@ const Experience = ({ isEditing }) => {
                             <Badge bg="success" className="ms-2">Current</Badge>
                           )}
                         </p>
-                        {exp.responsibilities && exp.responsibilities.length > 0 && (
+                        {exp.responsibilities && (
                           <div className="mt-2">
                             <p className="mb-1 small"><strong>Key Responsibilities:</strong></p>
                             <ul className="small">
-                              {exp.responsibilities.map((resp, i) => (
-                                <li key={i}>{resp}</li>
-                              ))}
+                              {typeof exp.responsibilities === 'string'
+                                ? exp.responsibilities
+                                  .split('\n')
+                                  .filter(r => r.trim() !== '')
+                                  .map((resp, i) => (
+                                    <li key={i}>{resp}</li>
+                                  ))
+                                : Array.isArray(exp.responsibilities)
+                                  ? exp.responsibilities
+                                    .filter(r => r && r.trim() !== '')
+                                    .map((resp, i) => (
+                                      <li key={i}>{resp}</li>
+                                    ))
+                                  : null
+                              }
                             </ul>
                           </div>
                         )}
                       </div>
                       {isEditing && (
-                        <Button 
-                          variant="outline-danger" 
+                        <Button
+                          variant="outline-danger"
                           size="sm"
+                          disabled={loading}
                           onClick={() => removeExperience(exp.id, 'nonAcademic')}
                         >
                           <FaTrash />
@@ -613,8 +944,8 @@ const Experience = ({ isEditing }) => {
                 <FaBriefcase size={32} className="text-muted mb-2" />
                 <p className="text-muted">No professional experience added yet.</p>
                 {isEditing && (
-                  <Button 
-                    variant="outline-primary" 
+                  <Button
+                    variant="outline-primary"
                     size="sm"
                     onClick={() => setShowNonAcademicForm(true)}
                   >
@@ -627,123 +958,98 @@ const Experience = ({ isEditing }) => {
 
           {/* Overall Experience Tab */}
           <Tab eventKey="overall" title="Overall Experience">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h6 className="mb-0">Experience Summary</h6>
-              {isEditing && (
-                <Button 
-                  variant="outline-primary" 
-                  size="sm"
-                  onClick={() => setShowOverallForm(!showOverallForm)}
-                >
-                  <FaPlus className="me-1" /> Add Experience Summary
-                </Button>
-              )}
-            </div>
+            <div className="mb-4">
+              <h6 className="mb-3">Experience Summary</h6>
+              <p className="text-muted small mb-4">
+                This section is automatically calculated based on your academic and professional experiences.
+              </p>
 
-            {showOverallForm && isEditing && (
-              <Card className="mb-4 border-primary">
+              <Card className="mb-4">
                 <Card.Body>
-                  <h6 className="mb-3">Add Experience Summary</h6>
-                  <Row>
-                    <Col md={6} className="mb-3">
-                      <Form.Group>
-                        <Form.Label>Experience Type</Form.Label>
-                        <Form.Select 
-                          name="type" 
-                          value={newOverallExp.type}
-                          onChange={handleOverallInputChange}
-                        >
-                          {experienceTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
+                  <Row className="text-center">
+                    <Col md={4} className="border-end">
+                      <div className="h4 mb-1">
+                        {calculateTotalExperience(academicExperience)}
+                      </div>
+                      <div className="text-muted small">Academic Experience</div>
                     </Col>
-                    <Col md={6} className="mb-3">
-                      <Form.Group>
-                        <Form.Label>Experience Range</Form.Label>
-                        <Form.Select 
-                          name="range" 
-                          value={newOverallExp.range}
-                          onChange={handleOverallInputChange}
-                        >
-                          {experienceRanges.map(range => (
-                            <option key={range} value={range}>{range}</option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
+                    <Col md={4} className="border-end">
+                      <div className="h4 mb-1">
+                        {calculateTotalExperience(nonAcademicExperience)}
+                      </div>
+                      <div className="text-muted small">Professional Experience</div>
                     </Col>
-                    <Col md={12} className="text-end">
-                      <Button 
-                        variant="outline-secondary" 
-                        className="me-2"
-                        onClick={() => setShowOverallForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        variant="primary"
-                        onClick={addOverallExperience}
-                      >
-                        Add Summary
-                      </Button>
+                    <Col md={4}>
+                      <div className="h4 mb-1 text-primary">
+                        {calculateTotalExperience([...academicExperience, ...nonAcademicExperience])}
+                      </div>
+                      <div className="text-muted small">Total Experience</div>
                     </Col>
                   </Row>
                 </Card.Body>
               </Card>
-            )}
 
-            {overallExperience.length > 0 ? (
-              <div className="table-responsive">
-                <table className="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Experience Type</th>
-                      <th>Duration</th>
-                      {isEditing && <th>Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overallExperience.map((exp) => (
-                      <tr key={exp.id}>
-                        <td>{exp.type}</td>
-                        <td>{exp.range}</td>
-                        {isEditing && (
-                          <td>
-                            <Button 
-                              variant="outline-danger" 
-                              size="sm"
-                              onClick={() => removeExperience(exp.id, 'overall')}
-                            >
-                              <FaTrash />
-                            </Button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-4">
+                <h6 className="mb-3">Experience Breakdown</h6>
+                <ListGroup variant="flush">
+                  <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                    <span>Teaching Experience</span>
+                    <Badge bg="light" text="dark">
+                      {getExperienceRange(calculateTotalExperience(academicExperience))}
+                    </Badge>
+                  </ListGroup.Item>
+                  <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                    <span>Industry Experience</span>
+                    <Badge bg="light" text="dark">
+                      {getExperienceRange(calculateTotalExperience(nonAcademicExperience))}
+                    </Badge>
+                  </ListGroup.Item>
+                  <ListGroup.Item className="d-flex justify-content-between align-items-center bg-light">
+                    <strong>Total Professional Experience</strong>
+                    <Badge bg="primary">
+                      {getExperienceRange(calculateTotalExperience([
+                        ...academicExperience,
+                        ...nonAcademicExperience
+                      ]))}
+                    </Badge>
+                  </ListGroup.Item>
+                </ListGroup>
               </div>
-            ) : (
-              <div className="text-center py-4">
-                <FaBriefcase size={32} className="text-muted mb-2" />
-                <p className="text-muted">No experience summary added yet.</p>
-                {isEditing && (
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm"
-                    onClick={() => setShowOverallForm(true)}
-                  >
-                    <FaPlus className="me-1" /> Add Experience Summary
-                  </Button>
-                )}
-              </div>
-            )}
+            </div>
           </Tab>
         </Tabs>
       </Card.Body>
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={handleCloseDeleteModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this experience? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseDeleteModal} disabled={loading}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleDeleteConfirmed}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Card>
   );
-};
+});
 
 export default Experience;

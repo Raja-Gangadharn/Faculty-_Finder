@@ -1,58 +1,192 @@
-import React, { useState } from 'react';
-import { Card, Button, Row, Col, Form, ListGroup, Badge } from 'react-bootstrap';
-import { FaPlus, FaTrash, FaFilePdf, FaFileImage, FaDownload } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Row, Col, Form, ListGroup, Badge, Alert, Spinner } from 'react-bootstrap';
+import { FaPlus, FaTrash, FaFilePdf, FaFileImage, FaDownload, FaExclamationTriangle } from 'react-icons/fa';
+import { Modal } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import facultyService from '../../../../services/facultyService';
 
 const Certificates = ({ isEditing }) => {
-  const [certificates, setCertificates] = useState([
-    {
-      id: 1,
-      name: 'AWS Certified Solutions Architect',
-      number: 'AWS-123456',
-      provider: 'Amazon Web Services',
-      issueDate: '2022-01-15',
-      expiryDate: '2024-01-15',
-      file: 'aws-certificate.pdf'
-    },
-    {
-      id: 2,
-      name: 'Google Cloud Professional',
-      number: 'GCP-789012',
-      provider: 'Google Cloud',
-      issueDate: '2021-11-10',
-      expiryDate: '2023-11-10',
-      file: 'gcp-certificate.pdf'
-    }
-  ]);
+  const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newCertificate, setNewCertificate] = useState({
     name: '',
     number: '',
     provider: '',
-    issueDate: '',
-    expiryDate: '',
+    issue_date: '',
+    expiry_date: '',
     file: null
   });
 
   const [filePreview, setFilePreview] = useState(null);
   const fileInputRef = React.useRef(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [certificateToDelete, setCertificateToDelete] = useState(null);
 
-  const handleAddCertificate = () => {
-    setCertificates([...certificates, { ...newCertificate, id: Date.now() }]);
-    setNewCertificate({
-      name: '',
-      number: '',
-      provider: '',
-      issueDate: '',
-      expiryDate: '',
-      file: null
-    });
-    setFilePreview(null);
+  // Fetch certificates on component mount
+  useEffect(() => {
+    fetchCertificates();
+  }, []);
+
+  const fetchCertificates = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('Please log in to view certificates.');
+        return [];
+      }
+      
+      const response = await facultyService.getCertificates();
+      
+      // Handle different response formats
+      let certificatesData = [];
+      
+      if (Array.isArray(response)) {
+        // If response is already an array
+        certificatesData = response;
+      } else if (response && typeof response === 'object') {
+        // If response is an object with a results array (common in paginated APIs)
+        if (Array.isArray(response.results)) {
+          certificatesData = response.results;
+        } else if (Array.isArray(response.data)) {
+          // If response has a data array
+          certificatesData = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          // If response has a data object with certificates
+          certificatesData = Object.values(response.data);
+        }
+      }
+      setCertificates(certificatesData);
+      return certificatesData;
+    } catch (err) {
+      console.error('Failed to fetch certificates:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to load certificates. Please try again.';
+      setError(errorMsg);
+      setCertificates([]);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCertificate = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Create form data with all fields
+      const { file, ...certData } = newCertificate;
+      const formData = new FormData();
+      
+      // Append all non-file fields
+      Object.entries(certData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append the file if it exists
+      if (file) {
+        formData.append('file', file);
+      }
+      
+      if (editingId) {
+        await facultyService.updateCertificate(editingId, formData);
+        toast.success('Certificate updated successfully', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true
+        });
+      } else {
+        await facultyService.createCertificate(formData);
+        toast.success('Certificate added successfully', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true
+        });
+      }
+      
+      // Reset form
+      setNewCertificate({
+        name: '',
+        number: '',
+        provider: '',
+        issue_date: '',
+        expiry_date: '',
+        file: null
+      });
+      setFilePreview(null);
+      setShowAddForm(false);
+      setEditingId(null);
+      
+      // Force a refresh of the certificates list with a small delay
+      setTimeout(() => {
+        fetchCertificates().catch(err => {
+          // Error handled in the UI via setError
+          setError('Failed to refresh certificates. Please reload the page.');
+        });
+      }, 500);
+      
+    } catch (err) {
+      console.error('Error saving certificate:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to save certificate. Please try again.';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
     setShowAddForm(false);
   };
 
   const handleRemoveCertificate = (id) => {
-    setCertificates(certificates.filter(cert => cert.id !== id));
+    setCertificateToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!certificateToDelete) return;
+    
+    try {
+      setLoading(true);
+      await facultyService.deleteCertificate(certificateToDelete);
+      
+      // Update the UI by removing the deleted certificate
+      setCertificates(certificates.filter(cert => cert.id !== certificateToDelete));
+      
+      // Show success toast
+      toast.success('Certificate deleted successfully', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to delete certificate. Please try again.';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+      setShowDeleteModal(false);
+      setCertificateToDelete(null);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowDeleteModal(false);
+    setCertificateToDelete(null);
   };
 
   const handleInputChange = (e) => {
@@ -63,7 +197,7 @@ const Certificates = ({ isEditing }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setNewCertificate({ ...newCertificate, file: file.name });
+      setNewCertificate({ ...newCertificate, file });
       
       // Create preview for images
       if (file.type.startsWith('image/')) {
@@ -161,9 +295,10 @@ const Certificates = ({ isEditing }) => {
                     <Form.Label>Issue Date</Form.Label>
                     <Form.Control 
                       type="date" 
-                      name="issueDate" 
-                      value={newCertificate.issueDate}
+                      name="issue_date" 
+                      value={newCertificate.issue_date}
                       onChange={handleInputChange}
+                      required
                     />
                   </Form.Group>
                 </Col>
@@ -172,10 +307,11 @@ const Certificates = ({ isEditing }) => {
                     <Form.Label>Expiry Date</Form.Label>
                     <Form.Control 
                       type="date" 
-                      name="expiryDate" 
-                      value={newCertificate.expiryDate}
+                      name="expiry_date" 
+                      value={newCertificate.expiry_date}
                       onChange={handleInputChange}
-                      min={newCertificate.issueDate}
+                      min={newCertificate.issue_date}
+                      required
                     />
                   </Form.Group>
                 </Col>
@@ -191,7 +327,7 @@ const Certificates = ({ isEditing }) => {
                         Choose File
                       </Button>
                       <span className="text-muted">
-                        {newCertificate.file || 'No file chosen'}
+                        {newCertificate.file?.name || 'No file chosen'}
                       </span>
                       <input
                         type="file"
@@ -240,54 +376,66 @@ const Certificates = ({ isEditing }) => {
           </Card>
         )}
 
-        {certificates.length > 0 ? (
-          <ListGroup variant="flush">
-            {certificates.map((cert) => (
-              <ListGroup.Item key={cert.id} className="py-3">
-                <div className="d-flex justify-content-between align-items-start">
-                  <div className="d-flex">
-                    <div className="me-3">
-                      {getFileIcon(cert.file)}
-                    </div>
-                    <div>
-                      <h6 className="mb-1">{cert.name}</h6>
-                      <p className="mb-1 text-muted">
-                        <strong>Provider:</strong> {cert.provider} • 
-                        <strong>Cert #:</strong> {cert.number}
-                      </p>
-                      <p className="mb-0 text-muted small">
-                        <strong>Issued:</strong> {formatDate(cert.issueDate)} • 
-                        <strong>Expires:</strong> {cert.expiryDate ? formatDate(cert.expiryDate) : 'N/A'}
-                        {cert.expiryDate && isExpired(cert.expiryDate) && (
-                          <Badge bg="danger" className="ms-2">Expired</Badge>
+        {certificates && certificates.length > 0 ? (
+          <>
+            <div className="mb-3">
+              <span className="badge bg-info text-dark">
+                Showing {certificates.length} certificate{certificates.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <ListGroup variant="flush">
+              {certificates.map((cert) => {
+                
+                return (
+                  <ListGroup.Item key={cert.id || index} className="py-3">
+                    <div className="d-flex justify-content-between align-items-start">
+                      <div className="d-flex">
+                        <div className="me-3">
+                          {getFileIcon(cert.file || cert.file_name || '')}
+                        </div>
+                        <div>
+                          <h6 className="mb-1">{cert.name || cert.certificate_name || 'Unnamed Certificate'}</h6>
+                          <p className="mb-1 text-muted">
+                            <strong>Provider:</strong> {cert.provider || 'N/A'} • 
+                            <strong>Cert #:</strong> {cert.number || cert.certificate_number || 'N/A'}
+                          </p>
+                          <p className="mb-0 text-muted small">
+                            <strong>Issued:</strong> {formatDate(cert.issue_date || cert.issued_date)} • 
+                            <strong>Expires:</strong> {cert.expiry_date ? formatDate(cert.expiry_date) : 'N/A'}
+                            {cert.expiry_date && isExpired(cert.expiry_date) && (
+                              <Badge bg="danger" className="ms-2">Expired</Badge>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="d-flex">
+                        {cert.file && (
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            href={`/certificates/${cert.file}`}
+                            download
+                          >
+                            <FaDownload className="me-1" /> Download
+                          </Button>
                         )}
-                      </p>
+                        {isEditing && (
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm"
+                            onClick={() => handleRemoveCertificate(cert.id)}
+                          >
+                            <FaTrash />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="d-flex">
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm" 
-                      className="me-2"
-                      href={`/certificates/${cert.file}`}
-                      download
-                    >
-                      <FaDownload className="me-1" /> Download
-                    </Button>
-                    {isEditing && (
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        onClick={() => handleRemoveCertificate(cert.id)}
-                      >
-                        <FaTrash />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
+                  </ListGroup.Item>
+                );
+              })}
+            </ListGroup>
+          </>
         ) : (
           <div className="text-center py-4">
             <FaFilePdf size={32} className="text-muted mb-2" />
@@ -304,6 +452,31 @@ const Certificates = ({ isEditing }) => {
           </div>
         )}
       </Card.Body>
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={handleCloseModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to delete this certificate? This action cannot be undone.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={confirmDelete} disabled={loading}>
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Card>
   );
 };
