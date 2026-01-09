@@ -8,8 +8,8 @@ const JobCard = ({
   job,
   isSaved: propIsSaved = false,
   isApplied: propIsApplied = false,   // optional from parent
-  onSaveToggle = () => {},
-  onApply = () => {},                 // optional parent callback
+  onSaveToggle = () => { },
+  onApply = () => { },                 // optional parent callback
 }) => {
   const [isSaved, setIsSaved] = useState(propIsSaved);
   const [isHovered, setIsHovered] = useState(false);
@@ -43,10 +43,10 @@ const JobCard = ({
   const handleApplyClick = (e) => {
     e.preventDefault(); e.stopPropagation();
     if (isApplied) return;
-    
+
     // Update local state
     setIsApplied(true);
-    
+
     // Notify parent if needed
     onApply(job);
   };
@@ -90,11 +90,11 @@ const JobCard = ({
             <div className="d-flex justify-content-between align-items-start mb-2">
               <div>
                 <Card.Title className="mb-3">
-                  <Link to={`/jobs/${job.id}`} className="text-decoration-none text-dark">
+                  <Link to={`/faculty/jobs/${job.id}`} className="text-decoration-none text-dark">
                     {job.title}
                   </Link>
                 </Card.Title>
-                
+
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                   <Badge bg="light" text="dark" className="d-flex align-items-center">
                     <Building size={14} className="me-1" /> {job.department}
@@ -115,7 +115,7 @@ const JobCard = ({
                   )}
                   {job.deadline && (
                     <span className="d-flex align-items-center">
-                      <Calendar size={14} className="me-1" /> 
+                      <Calendar size={14} className="me-1" />
                       Apply by {new Date(job.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </span>
                   )}
@@ -157,10 +157,10 @@ const JobCard = ({
               {job.deadline && (
                 <div className="text-muted small d-flex align-items-center mt-2 mt-sm-0">
                   <Calendar size={14} className="me-1 flex-shrink-0" />
-                  <span>Apply by: {new Date(job.deadline).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
+                  <span>Apply by: {new Date(job.deadline).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
                   })}</span>
                 </div>
               )}

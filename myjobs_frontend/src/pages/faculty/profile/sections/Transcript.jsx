@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Card, Button, Row, Col, Form, Spinner, Alert, Badge, Accordion, Modal } from 'react-bootstrap';
+import { Card, Button, Row, Col, Form, Spinner, Alert, Badge, Accordion, Modal, Table } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { FaPlus, FaTrash, FaFileUpload, FaEdit, FaBook, FaExclamationTriangle } from 'react-icons/fa';
 import facultyService from '../../../../services/facultyService';
@@ -15,6 +15,10 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
   const [uploading, setUploading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
+  const [selectedTranscript, setSelectedTranscript] = useState(null);
+  const [coursesSelection, setCoursesSelection] = useState({});
+  const [savingCourses, setSavingCourses] = useState(false);
 
   const initialCourseState = {
     code: '',
@@ -24,6 +28,7 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
   };
 
   const initialFormState = {
+    degree_level: '',
     degree: '',
     institution: '',
     major: '',
@@ -58,8 +63,8 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
 
   // Define valid degree options
   const degreeOptions = [
-    { value: 'Masters', label: "Master's Degree" },
-    { value: 'Doctorate', label: 'Doctoral Degree' }
+    { value: "Master's", label: "Master's" },
+    { value: 'Doctorate', label: 'Doctorate' }
   ];
 
 
@@ -161,6 +166,7 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
 
             // Map required fields
             if (formData.degree) formDataToSend.append('degree', formData.degree);
+            if (formData.degree_level) formDataToSend.append('degree_level', formData.degree_level);
             if (formData.institution) formDataToSend.append('college', formData.institution);
             if (formData.year_completed) formDataToSend.append('year_completed', formData.year_completed);
 
@@ -272,6 +278,7 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
       const processedData = data.map(item => ({
         id: item.id,
         degree: item.degree,
+        degree_level: item.degree_level || null,
         institution: item.college || item.institution || 'N/A',
         major: item.major || 'N/A',
         department: item.department ?? null,
@@ -379,14 +386,14 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
     setSuccess('');
 
     // Validate degree type
-    const validDegrees = ['Masters', 'Doctorate'];
-    if (!validDegrees.includes(formData.degree)) {
+    const validDegrees = ["Master's", 'Doctorate'];
+    if (!validDegrees.includes(formData.degree_level)) {
       setError('Only Master\'s and Doctoral degrees are accepted for transcripts');
       return;
     }
 
     // Basic form validation
-    if (!formData.degree?.trim() || !formData.institution?.trim() || !formData.year_completed) {
+    if (!formData.degree_level || !formData.degree?.trim() || !formData.institution?.trim() || !formData.year_completed) {
       setError('Please fill in all required fields');
       return;
     }
@@ -411,6 +418,7 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
 
       // Add all form fields to FormData
       formDataToSend.append('degree', formData.degree.trim());
+      formDataToSend.append('degree_level', formData.degree_level);
       formDataToSend.append('college', formData.institution.trim()); // Map to 'college' in backend
 
       // Optional fields
@@ -593,13 +601,20 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
   const handleEdit = (transcript) => {
     // Reset form data with transcript values
     setFormData({
+      degree_level: transcript.degree_level || '',
       degree: transcript.degree || '',
-      institution: transcript.college || '', // Map college to institution for the form
+      institution: transcript.institution || transcript.college || '', // Handle both institution and college fields
       major: transcript.major || '',
       department: transcript.department || '',
       year_completed: transcript.year_completed || new Date().getFullYear().toString(),
       file_name: transcript.file ? transcript.file.split('/').pop() : '', // Extract filename from file URL if it exists
-      courses: transcript.courses?.length > 0 ? transcript.courses : [JSON.parse(JSON.stringify(initialCourseState))],
+      courses: transcript.courses?.length > 0 ? transcript.courses.map(course => ({
+        code: course.code || '',
+        name: course.name || '',
+        credit_hours: course.credit_hours || course.credits || '',
+        grade: course.grade || '',
+        department: course.department || ''
+      })) : [JSON.parse(JSON.stringify(initialCourseState))],
       file_url: transcript.file || ''
     });
 
@@ -622,6 +637,49 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
         formElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
+  };
+
+  const openCoursesModal = (transcript) => {
+    const map = {};
+    (transcript.courses || []).forEach((c) => {
+      if (c && (c.id !== undefined && c.id !== null)) map[c.id] = true;
+    });
+    setSelectedTranscript(transcript);
+    setCoursesSelection(map);
+    setShowCoursesModal(true);
+  };
+
+  const toggleCourseSelection = (courseId) => {
+    setCoursesSelection((prev) => ({ ...prev, [courseId]: !prev[courseId] }));
+  };
+
+  const handleCoursesUpdate = async () => {
+    if (!selectedTranscript) return;
+    try {
+      setSavingCourses(true);
+      const selected = (selectedTranscript.courses || []).filter((c) => coursesSelection[c.id]);
+      const payloadCourses = selected
+        .map((c) => ({
+          code: (c.code || '').trim(),
+          name: (c.name || '').trim(),
+          credit_hours: (c.credit_hours !== '' && c.credit_hours !== null && c.credit_hours !== undefined) ? c.credit_hours : undefined,
+          grade: (c.grade || '').trim(),
+          department: (c.department && /^\d+$/.test(String(c.department))) ? String(c.department) : (typeof c.department === 'number' ? String(c.department) : undefined),
+        }))
+        // Filter out any empty-name rows to satisfy backend validation
+        .filter((c) => !!c.name);
+      // Use PATCH for partial update so required transcript fields are not re-validated
+      await facultyService.patchTranscript(selectedTranscript.id, { courses: payloadCourses });
+      toast.success('Courses updated successfully');
+      setShowCoursesModal(false);
+      setSelectedTranscript(null);
+      await fetchTranscripts();
+    } catch (err) {
+      console.error('Failed to update courses', err);
+      toast.error('Failed to update courses');
+    } finally {
+      setSavingCourses(false);
+    }
   };
 
   if (loading && !showAddForm) {
@@ -673,10 +731,10 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
                 <Row>
                   <Col md={4} className="mb-3">
                     <Form.Group>
-                      <Form.Label>Degree <span className="text-danger">*</span></Form.Label>
+                      <Form.Label>Choose Degree <span className="text-danger">*</span></Form.Label>
                       <Form.Select
-                        name="degree"
-                        value={formData.degree}
+                        name="degree_level"
+                        value={formData.degree_level}
                         onChange={handleInputChange}
                         required
                         disabled={uploading}
@@ -689,7 +747,7 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
                         ))}
                       </Form.Select>
                       <Form.Text className="text-muted">
-                        Only Master's and Doctoral degrees are accepted for transcripts
+                        Only Master's and Doctorate are accepted for transcripts
                       </Form.Text>
                     </Form.Group>
                   </Col>
@@ -727,7 +785,21 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
                       />
                     </Form.Group>
                   </Col>
-                  <Col md={6} className="mb-3">
+                  <Col md={4} className="mb-3">
+                    <Form.Group>
+                      <Form.Label>Degree <span className="text-danger">*</span></Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="degree"
+                        value={formData.degree}
+                        onChange={handleInputChange}
+                        required
+                        disabled={uploading}
+                        placeholder="e.g., Doctorate in Business Administration – Specialization in Accounting"
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4} className="mb-3">
                     <Form.Group>
                       <Form.Label>Major/Field of Study</Form.Label>
                       <Form.Control
@@ -740,7 +812,7 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
                       />
                     </Form.Group>
                   </Col>
-                  <Col md={6} className="mb-3">
+                  <Col md={4} className="mb-3">
                     <Form.Group>
                       <Form.Label>Year Completed <span className="text-danger">*</span></Form.Label>
                       <Form.Control
@@ -949,51 +1021,137 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
         ) : (
           <div className="transcript-list">
             {transcripts.map((transcript) => (
-              <Card key={transcript.id} className="mb-3">
-                <Card.Body>
-                  <div className="d-flex justify-content-between">
-                    <div>
-                      <h6 className="mb-1">{transcript.degree || 'N/A'}</h6>
-                      <p className="mb-1 text-muted">
-                        {transcript.institution || 'N/A'} • {transcript.major || 'N/A'} • {transcript.year_completed || 'N/A'}
-                      </p>
-                      {transcript.file && (
-                        <p className="mb-0">
-                          <a
-                            href={transcript.file}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <FaFileUpload className="me-1" /> View Transcript
-                          </a>
+              // Don't show the transcript card if it's being edited
+              editingId !== transcript.id && (
+                <Card key={transcript.id} className="mb-3">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between">
+                      <div>
+                        <h6 className="mb-1">{transcript.degree || 'N/A'}</h6>
+                        <p className="mb-1 text-muted">
+                          {transcript.institution || 'N/A'} • {transcript.major || 'N/A'} • {transcript.year_completed || 'N/A'}
                         </p>
-                      )}
-                    </div>
-                    {isEditing && (
+                        {transcript.file && (
+                          <p className="mb-0">
+                            <a
+                              href={transcript.file}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <FaFileUpload className="me-1" /> View Transcript
+                            </a>
+                          </p>
+                        )}
+                      </div>
                       <div className="d-flex">
                         <Button
-                          variant="outline-danger"
+                          variant="outline-secondary"
                           size="sm"
-                          className="ms-2"
+                          className="me-2"
                           onClick={(e) => {
                             e.stopPropagation();
-                            confirmDelete(transcript.id);
+                            openCoursesModal(transcript);
                           }}
-                          disabled={!isEditing || loading}
+                          disabled={loading}
                         >
-                          <FaTrash />
+                          <FaBook className="me-1" /> Course(s)
                         </Button>
+                        {isEditing && (
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="ms-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(transcript);
+                            }}
+                            disabled={loading}
+                          >
+                            <FaEdit /> Edit
+                          </Button>
+                        )}
+                        {isEditing && (
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="ms-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete(transcript.id);
+                            }}
+                            disabled={loading}
+                          >
+                            <FaTrash />
+                          </Button>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </Card.Body>
-              </Card>
+                    </div>
+                  </Card.Body>
+                </Card>
+              )
             ))}
           </div>
         )}
       </Card.Body>
+
+      <Modal show={showCoursesModal} onHide={() => setShowCoursesModal(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Course(s) - {selectedTranscript?.degree} {selectedTranscript?.degree_level ? `(${selectedTranscript.degree_level})` : ''}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedTranscript && Array.isArray(selectedTranscript.courses) && selectedTranscript.courses.length > 0 ? (
+            <div className="table-responsive">
+              <Table bordered hover>
+                <thead>
+                  <tr>
+                    <th>Select</th>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Credit Hours</th>
+                    <th>Department</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTranscript.courses.map((c) => (
+                    <tr key={c.id || `${c.code}-${c.name}`}>
+                      <td>
+                        <Form.Check
+                          type="checkbox"
+                          checked={!!coursesSelection[c.id]}
+                          onChange={() => toggleCourseSelection(c.id)}
+                        />
+                      </td>
+                      <td>{c.code}</td>
+                      <td>{c.name}</td>
+                      <td>{c.credit_hours || ''}</td>
+                      <td>{c.department_name || ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          ) : (
+            <Alert variant="info">No courses found for this transcript.</Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCoursesModal(false)} disabled={savingCourses}>Cancel</Button>
+          <Button variant="primary" onClick={handleCoursesUpdate} disabled={savingCourses}>
+            {savingCourses ? (
+              <>
+                <Spinner as="span" size="sm" animation="border" role="status" aria-hidden="true" className="me-2" />
+                Updating...
+              </>
+            ) : (
+              'Update'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={handleCloseModal} centered>

@@ -45,7 +45,7 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
         const response = await facultyService.getFacultyProfile();
         // Check if response has data property or use the response directly
         const data = response?.data || response;
-        
+
         if (data) {
           setFormData({
             title: data.title || '',
@@ -58,16 +58,16 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
             state: data.state || '',
             city: data.city || '',
             linkedin: data.linkedin || '',
-            workPreference: Array.isArray(data.work_preference) ? data.work_preference : 
-                           (Array.isArray(data.workPreference) ? data.workPreference : [])
+            workPreference: Array.isArray(data.work_preference) ? data.work_preference :
+              (Array.isArray(data.workPreference) ? data.workPreference : [])
           });
-          
+
           // Handle profile photo - ensure we have the full URL
           const baseUrl = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8000';
           if (data.profile_photo) {
             // Check if the URL is already absolute
-            const photoUrl = data.profile_photo.startsWith('http') 
-              ? data.profile_photo 
+            const photoUrl = data.profile_photo.startsWith('http')
+              ? data.profile_photo
               : `${baseUrl}${data.profile_photo}`;
             setProfilePhotoPreview(photoUrl);
           } else if (data.profilePhoto) {
@@ -85,7 +85,7 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
         setLoading(false);
       }
     };
-    
+
     loadProfile();
   }, []);
 
@@ -119,19 +119,19 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     // Validate file type
     if (!file.type.match('image.*')) {
       setError('Please select a valid image file (JPEG, PNG, GIF)');
       return;
     }
-    
+
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setError('Image size should be less than 2MB');
       return;
     }
-    
+
     setProfilePhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => setProfilePhotoPreview(reader.result);
@@ -155,11 +155,11 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
     try {
       setLoading(true);
       setError('');
-      
+
       // Prepare the form data - don't include the file in the main payload
       // as it will be handled separately in the file upload
       const payload = { ...dataToSave };
-      
+
       // If we have a new profile photo file, include it
       if (profilePhotoFile) {
         payload.profile_photo = profilePhotoFile;
@@ -168,7 +168,7 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
       // Update the profile
       const response = await facultyService.updateFacultyProfile(payload);
       const responseData = response?.data || response;
-      
+
       // Update local state with the response
       if (responseData) {
         setFormData(prev => ({
@@ -181,19 +181,19 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
           state: responseData.state || prev.state,
           city: responseData.city || prev.city,
           linkedin: responseData.linkedin || prev.linkedin,
-          workPreference: Array.isArray(responseData.work_preference) 
-            ? responseData.work_preference 
-            : (Array.isArray(responseData.workPreference) 
-                ? responseData.workPreference 
-                : prev.workPreference)
+          workPreference: Array.isArray(responseData.work_preference)
+            ? responseData.work_preference
+            : (Array.isArray(responseData.workPreference)
+              ? responseData.workPreference
+              : prev.workPreference)
         }));
-        
+
         // Update profile photo preview if it was updated
         if (responseData.profile_photo || responseData.profilePhoto) {
           setProfilePhotoPreview(responseData.profile_photo || responseData.profilePhoto);
           setProfilePhotoFile(null); // Clear the file after successful upload
         }
-        
+
         toast.success('Profile updated successfully!', {
           position: 'top-right',
           autoClose: 3000,
@@ -204,7 +204,7 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
         });
         return { ok: true };
       }
-      
+
       return { ok: false, error: 'Failed to update profile. No data returned from server.' };
     } catch (err) {
       console.error('Save failed', err);
@@ -235,36 +235,36 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h5 className="section-title mb-0">Basic Information</h5>
         </div>
-        
+
         {error && (
           <Alert variant="danger" onClose={() => setError('')} dismissible className="mb-4">
             {error}
           </Alert>
         )}
-        
+
         <Row className="mb-4">
           <Col xs={12} className="text-center">
             <div style={{ width: 140, height: 140, margin: '0 auto 20px', position: 'relative' }}>
               {profilePhotoPreview ? (
-                <img 
-                  src={profilePhotoPreview} 
-                  alt="Profile" 
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover', 
+                <img
+                  src={profilePhotoPreview}
+                  alt="Profile"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
                     borderRadius: '50%',
                     border: '3px solid #f0f0f0'
-                  }} 
+                  }}
                 />
               ) : (
-                <div style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  background: '#f8f9fa', 
-                  borderRadius: '50%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  background: '#f8f9fa',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   border: '2px dashed #dee2e6'
                 }}>
@@ -273,20 +273,20 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
               )}
               {isEditing && (
                 <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)' }}>
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={triggerFileInput}
                     style={{ borderRadius: '20px' }}
                   >
                     <FaCamera />
                   </Button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    accept="image/*" 
-                    className="d-none" 
-                    onChange={handlePhotoUpload} 
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="d-none"
+                    onChange={handlePhotoUpload}
                   />
                 </div>
               )}
@@ -298,9 +298,9 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
           <Col md={6} className="mb-3">
             <Form.Group>
               <Form.Label>Title</Form.Label>
-              <Form.Select 
-                name="title" 
-                value={formData.title} 
+              <Form.Select
+                name="title"
+                value={formData.title}
                 onChange={handleChange}
                 disabled={!isEditing || loading}
               >
@@ -316,39 +316,40 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
           <Col md={6} className="mb-3">
             <Form.Group>
               <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
-              <Form.Control 
-                type="text" 
-                name="firstName" 
-                value={formData.firstName} 
+              <Form.Control
+                type="text"
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
                 disabled={!isEditing || loading}
-                required 
+                required
               />
             </Form.Group>
           </Col>
           <Col md={6} className="mb-3">
             <Form.Group>
               <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
-              <Form.Control 
-                type="text" 
-                name="lastName" 
-                value={formData.lastName} 
+              <Form.Control
+                type="text"
+                name="lastName"
+                value={formData.lastName}
                 onChange={handleChange}
                 disabled={!isEditing || loading}
-                required 
+                required
               />
             </Form.Group>
           </Col>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label>Email <span className="text-danger">*</span></Form.Label>
-              <Form.Control 
-                type="email" 
-                name="email" 
-                value={formData.email} 
+              <Form.Label>Email <span className="text-danger">*</span> <small className="text-muted">(unchangeable)</small></Form.Label>
+              <Form.Control
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 disabled={true}
-                required 
+                required
+                readOnly
               />
             </Form.Group>
           </Col>
@@ -357,13 +358,13 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
               <Form.Label>Phone <span className="text-danger">*</span></Form.Label>
               <div className="input-group">
                 <span className="input-group-text"><FaPhone /></span>
-                <Form.Control 
-                  type="tel" 
-                  name="phone" 
-                  value={formData.phone} 
+                <Form.Control
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
                   disabled={!isEditing || loading}
-                  required 
+                  required
                 />
               </div>
             </Form.Group>
@@ -373,10 +374,10 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
               <Form.Label>Date of Birth</Form.Label>
               <div className="input-group">
                 <span className="input-group-text"><FaCalendarAlt /></span>
-                <Form.Control 
-                  type="date" 
-                  name="dob" 
-                  value={formData.dob} 
+                <Form.Control
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
                   onChange={handleChange}
                   disabled={!isEditing || loading}
                 />
@@ -386,9 +387,9 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
           <Col md={6} className="mb-3">
             <Form.Group>
               <Form.Label>Gender</Form.Label>
-              <Form.Select 
-                name="gender" 
-                value={formData.gender} 
+              <Form.Select
+                name="gender"
+                value={formData.gender}
                 onChange={handleChange}
                 disabled={!isEditing || loading}
               >
@@ -403,9 +404,9 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
           <Col md={6} className="mb-3">
             <Form.Group>
               <Form.Label>State</Form.Label>
-              <Form.Select 
-                name="state" 
-                value={formData.state} 
+              <Form.Select
+                name="state"
+                value={formData.state}
                 onChange={handleChange}
                 disabled={!isEditing || loading}
               >
@@ -421,10 +422,10 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
               <Form.Label>City</Form.Label>
               <div className="input-group">
                 <span className="input-group-text"><FaMapMarkerAlt /></span>
-                <Form.Control 
-                  type="text" 
-                  name="city" 
-                  value={formData.city} 
+                <Form.Control
+                  type="text"
+                  name="city"
+                  value={formData.city}
                   onChange={handleChange}
                   disabled={!isEditing || loading}
                 />
@@ -436,10 +437,10 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
               <Form.Label>LinkedIn Profile</Form.Label>
               <div className="input-group">
                 <span className="input-group-text"><FaLinkedin /></span>
-                <Form.Control 
-                  type="url" 
-                  name="linkedin" 
-                  value={formData.linkedin} 
+                <Form.Control
+                  type="url"
+                  name="linkedin"
+                  value={formData.linkedin}
                   onChange={handleChange}
                   disabled={!isEditing || loading}
                   placeholder="https://www.linkedin.com/in/your-profile"

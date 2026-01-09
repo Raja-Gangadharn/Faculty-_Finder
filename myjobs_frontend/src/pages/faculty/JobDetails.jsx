@@ -24,7 +24,7 @@ const JobDetails = () => {
         // TODO: Replace with actual API call
         // const response = await fetch(`/api/jobs/${id}`);
         // const data = await response.json();
-        
+
         // Mock data - replace with actual API call
         setTimeout(() => {
           const mockJob = {
@@ -32,8 +32,7 @@ const JobDetails = () => {
             title: 'Assistant Professor – Computer Science',
             department: 'Computer Science',
             institution: 'Prestige University',
-            type: 'Full Time',
-            level: 'Entry Level',
+            job_type: 'Full Time',
             course: 'B.Tech, M.Tech, Ph.D',
             location: 'New York, USA',
             salary: '$80,000 - $100,000 per year',
@@ -127,14 +126,14 @@ const JobDetails = () => {
 
   return (
     <Container className="py-4">
-      <Button 
-        variant="link" 
-        className="mb-3 px-0 d-flex align-items-center" 
+      <Button
+        variant="link"
+        className="mb-3 px-0 d-flex align-items-center"
         onClick={() => navigate(-1)}
       >
         <ArrowLeft className="me-2" /> Back to Jobs
       </Button>
-      
+
       <Card className="mb-4 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-start mb-3">
@@ -143,7 +142,7 @@ const JobDetails = () => {
               <p className="text-muted mb-2">{job.institution} • {job.location}</p>
               <div className="d-flex flex-wrap gap-2 mb-3">
                 <Badge bg="primary" className="d-flex align-items-center">
-                  <Briefcase className="me-1" size={14} /> {job.type}
+                  <Briefcase className="me-1" size={14} /> {job.job_type}
                 </Badge>
                 <Badge bg="secondary" className="d-flex align-items-center">
                   <Book className="me-1" size={14} /> {job.department}
@@ -154,7 +153,7 @@ const JobDetails = () => {
               </div>
             </div>
             <div className="d-flex gap-2">
-              <Button 
+              <Button
                 variant={applied ? 'success' : 'primary'}
                 onClick={handleApply}
                 disabled={applied}

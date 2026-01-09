@@ -1,88 +1,57 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Card, Form, Button, Row, Col, Modal, 
+import {
+  Card, Form, Button, Row, Col, Modal,
   Badge, Container, InputGroup, Spinner
 } from 'react-bootstrap';
-import { 
-  FaSearch, FaUserGraduate, FaEnvelope, 
-  FaUniversity, FaLaptop, FaBuilding, FaSync, 
-  FaRegBookmark, FaTrashAlt, FaEye, FaRegStar, FaStar 
+import {
+  FaSearch, FaUserGraduate, FaEnvelope,
+  FaUniversity, FaLaptop, FaBuilding, FaSync, FaMedal,
+  FaRegBookmark, FaTrashAlt, FaEye
 } from 'react-icons/fa';
-
-// Mock data – replace with API data later
-const mockProfiles = [
-  { 
-    id: 1, 
-    name: 'Dr. Alice Johnson', 
-    email: 'alice@example.com', 
-    department: 'Computer Science', 
-    preference: 'Remote',
-    expertise: ['Machine Learning', 'AI', 'Data Science'],
-    lastUpdated: '2 days ago',
-    isFavorited: true
-  },
-  { 
-    id: 2, 
-    name: 'Dr. Bob Smith', 
-    email: 'bob@example.edu', 
-    department: 'Mathematics', 
-    preference: 'On-campus',
-    expertise: ['Applied Mathematics', 'Statistics', 'Calculus'],
-    lastUpdated: '1 week ago',
-    isFavorited: false
-  },
-  { 
-    id: 3, 
-    name: 'Dr. Carol Lee', 
-    email: 'carol@university.edu', 
-    department: 'Physics', 
-    preference: 'Hybrid',
-    expertise: ['Quantum Mechanics', 'Theoretical Physics'],
-    lastUpdated: '3 days ago',
-    isFavorited: true
-  },
-  { 
-    id: 4, 
-    name: 'Prof. David Kim', 
-    email: 'david@college.edu', 
-    department: 'Chemistry', 
-    preference: 'Remote',
-    expertise: ['Organic Chemistry', 'Biochemistry'],
-    lastUpdated: '5 days ago',
-    isFavorited: false
-  },
-  { 
-    id: 5, 
-    name: 'Prof. Emily Brown', 
-    email: 'emily@institute.edu', 
-    department: 'Biology', 
-    preference: 'On-campus',
-    expertise: ['Genetics', 'Microbiology'],
-    lastUpdated: '1 day ago',
-    isFavorited: true
-  },
-];
 
 const PAGE_SIZE = 6;
 
 const SavedProfiles = () => {
   const navigate = useNavigate();
-  const [profiles, setProfiles] = useState(mockProfiles);
+  const [profiles, setProfiles] = useState([]);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // Load saved profiles from localStorage on component mount
+  useEffect(() => {
+    const loadSavedProfiles = () => {
+      try {
+        const savedProfiles = JSON.parse(localStorage.getItem('savedProfiles') || '[]');
+        setProfiles(savedProfiles);
+      } catch (error) {
+        console.error('Error loading saved profiles:', error);
+        setProfiles([]);
+      }
+    };
+
+    loadSavedProfiles();
+
+    // Listen for storage changes (in case profiles are saved from another tab)
+    const handleStorageChange = () => {
+      loadSavedProfiles();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Filter profiles by name/email and active filter
   const filtered = useMemo(() => {
     let result = [...profiles];
-    
+
     // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      result = result.filter(p => 
+      result = result.filter(p =>
         p.name.toLowerCase().includes(searchLower) ||
         p.email.toLowerCase().includes(searchLower) ||
         p.department.toLowerCase().includes(searchLower)
@@ -104,17 +73,17 @@ const SavedProfiles = () => {
 
   const handleDelete = (id) => {
     setProfiles((prev) => prev.filter((p) => p.id !== id));
-    setDeleteTarget(null);
-  };
 
-  const toggleFavorite = (id) => {
-    setProfiles(prev => 
-      prev.map(profile => 
-        profile.id === id 
-          ? { ...profile, isFavorited: !profile.isFavorited } 
-          : profile
-      )
-    );
+    // Also remove from localStorage
+    try {
+      const savedProfiles = JSON.parse(localStorage.getItem('savedProfiles') || '[]');
+      const updatedSaved = savedProfiles.filter(p => p.id !== id);
+      localStorage.setItem('savedProfiles', JSON.stringify(updatedSaved));
+    } catch (error) {
+      console.error('Error removing profile from localStorage:', error);
+    }
+
+    setDeleteTarget(null);
   };
 
   const handleSearchChange = (e) => {
@@ -127,16 +96,16 @@ const SavedProfiles = () => {
   const getPreferenceBadge = (preference) => {
     const variants = {
       'Remote': 'success',
-      'On-campus': 'primary',
+      'On-site': 'primary',
       'Hybrid': 'warning'
     };
-    
+
     const icons = {
       'Remote': <FaLaptop className="me-1" />,
-      'On-campus': <FaBuilding className="me-1" />,
+      'On-site': <FaBuilding className="me-1" />,
       'Hybrid': <FaSync className="me-1" />
     };
-    
+
     return (
       <Badge bg={variants[preference] || 'secondary'} className="d-inline-flex align-items-center">
         {icons[preference] || null}
@@ -154,7 +123,7 @@ const SavedProfiles = () => {
             {totalItems} {totalItems === 1 ? 'profile' : 'profiles'} found
           </p>
         </div>
-        
+
         <div className="w-100 w-md-50">
           <InputGroup>
             <InputGroup.Text className="bg-white border-end-0">
@@ -172,45 +141,37 @@ const SavedProfiles = () => {
 
       {/* Filters */}
       <div className="d-flex flex-wrap gap-2 mb-4">
-        <Button 
-          variant={activeFilter === 'all' ? 'primary' : 'outline-secondary'} 
+        <Button
+          variant={activeFilter === 'all' ? 'primary' : 'outline-secondary'}
           size="sm"
           onClick={() => setActiveFilter('all')}
           className="rounded-pill px-3"
         >
           All Profiles
         </Button>
-        <Button 
-          variant={activeFilter === 'remote' ? 'primary' : 'outline-secondary'} 
+        <Button
+          variant={activeFilter === 'remote' ? 'primary' : 'outline-secondary'}
           size="sm"
           onClick={() => setActiveFilter('remote')}
           className="rounded-pill px-3 d-flex align-items-center gap-1"
         >
           <FaLaptop /> Remote
         </Button>
-        <Button 
-          variant={activeFilter === 'on-campus' ? 'primary' : 'outline-secondary'} 
+        <Button
+          variant={activeFilter === 'on-site' ? 'primary' : 'outline-secondary'}
           size="sm"
-          onClick={() => setActiveFilter('on-campus')}
+          onClick={() => setActiveFilter('on-site')}
           className="rounded-pill px-3 d-flex align-items-center gap-1"
         >
-          <FaBuilding /> On-campus
+          <FaBuilding /> On-site
         </Button>
-        <Button 
-          variant={activeFilter === 'hybrid' ? 'primary' : 'outline-secondary'} 
+        <Button
+          variant={activeFilter === 'hybrid' ? 'primary' : 'outline-secondary'}
           size="sm"
           onClick={() => setActiveFilter('hybrid')}
           className="rounded-pill px-3 d-flex align-items-center gap-1"
         >
           <FaSync /> Hybrid
-        </Button>
-        <Button 
-          variant={activeFilter === 'favorites' ? 'primary' : 'outline-secondary'} 
-          size="sm"
-          onClick={() => setActiveFilter('favorites')}
-          className="rounded-pill px-3 d-flex align-items-center gap-1"
-        >
-          <FaStar className="text-warning" /> Favorites
         </Button>
       </div>
 
@@ -227,13 +188,13 @@ const SavedProfiles = () => {
             </div>
             <h4>No profiles found</h4>
             <p className="text-muted">
-              {search 
-                ? 'Try adjusting your search or filter criteria.' 
+              {search
+                ? 'Try adjusting your search or filter criteria.'
                 : 'Your saved profiles will appear here.'}
             </p>
             {search && (
-              <Button 
-                variant="outline-primary" 
+              <Button
+                variant="outline-primary"
                 onClick={() => {
                   setSearch('');
                   setActiveFilter('all');
@@ -253,8 +214,8 @@ const SavedProfiles = () => {
                 <Card.Body className="d-flex flex-column h-100">
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div className="d-flex align-items-center">
-                      <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" 
-                           style={{ width: '50px', height: '50px' }}>
+                      <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center"
+                        style={{ width: '50px', height: '50px' }}>
                         <FaUserGraduate size={24} />
                       </div>
                       <div className="ms-3">
@@ -262,15 +223,30 @@ const SavedProfiles = () => {
                         <small className="text-muted">{profile.department}</small>
                       </div>
                     </div>
-                    <Button 
-                      variant="link" 
-                      className="p-0 text-warning"
-                      onClick={() => toggleFavorite(profile.id)}
-                    >
-                      {profile.isFavorited ? <FaStar /> : <FaRegStar />}
-                    </Button>
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <FaMedal size={44} color="#f59e0b" />
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: '#16a34a',
+                        color: '#fff',
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: 12,
+                        boxShadow: '0 0 0 3px #ffffff'
+                      }}>
+                        {profile.courseCreditScore || 0}
+                      </div>
+                    </div>
                   </div>
-                  
+
                   <div className="mb-3">
                     <div className="d-flex align-items-center text-muted small mb-2">
                       <FaEnvelope className="me-2" />
@@ -288,7 +264,7 @@ const SavedProfiles = () => {
 
                   {profile.expertise && profile.expertise.length > 0 && (
                     <div className="mb-3">
-                      <h6 className="small text-uppercase text-muted mb-2">Expertise</h6>
+                      <h6 className="small text-uppercase text-muted mb-2">Skills</h6>
                       <div className="d-flex flex-wrap gap-1">
                         {profile.expertise.slice(0, 3).map((skill, idx) => (
                           <Badge key={idx} bg="light" text="dark" className="fw-normal">
@@ -309,16 +285,16 @@ const SavedProfiles = () => {
                       Updated {profile.lastUpdated}
                     </small>
                     <div className="d-flex gap-2">
-                      <Button 
-                        variant="outline-primary" 
+                      <Button
+                        variant="outline-primary"
                         size="sm"
                         onClick={() => navigate(`/recruiter/faculty/${profile.id}`)}
                         className="d-flex align-items-center gap-1"
                       >
                         <FaEye size={12} /> View
                       </Button>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => setDeleteTarget(profile)}
                         className="d-flex align-items-center gap-1"
@@ -340,15 +316,15 @@ const SavedProfiles = () => {
           <nav aria-label="Profile pagination">
             <ul className="pagination mb-0">
               <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                <button 
-                  className="page-link" 
+                <button
+                  className="page-link"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
                   Previous
                 </button>
               </li>
-              
+
               {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
                 // Show first page, last page, current page, and pages around current page
                 let pageNum;
@@ -361,7 +337,7 @@ const SavedProfiles = () => {
                 } else {
                   pageNum = currentPage - 2 + i;
                 }
-                
+
                 return (
                   <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
                     <button className="page-link" onClick={() => handlePageChange(pageNum)}>
@@ -370,10 +346,10 @@ const SavedProfiles = () => {
                   </li>
                 );
               })}
-              
+
               <li className={`page-item ${currentPage === pageCount ? 'disabled' : ''}`}>
-                <button 
-                  className="page-link" 
+                <button
+                  className="page-link"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === pageCount}
                 >
@@ -405,8 +381,8 @@ const SavedProfiles = () => {
           <Button variant="light" onClick={() => setDeleteTarget(null)} className="px-4">
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
+          <Button
+            variant="danger"
             onClick={() => {
               handleDelete(deleteTarget?.id);
               setDeleteTarget(null);

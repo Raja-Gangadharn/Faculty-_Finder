@@ -185,8 +185,8 @@ class RecruiterRegistrationSerializer(CamelInputModelSerializer):
 class UserBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ("id", "email", "is_faculty", "is_recruiter")
-        read_only_fields = ("id", "email", "is_faculty", "is_recruiter")
+        fields = ("id", "email", "is_faculty", "is_recruiter", "last_login")
+        read_only_fields = ("id", "email", "is_faculty", "is_recruiter", "last_login")
 
 
 class FacultyProfileSerializer(CamelInputModelSerializer):
@@ -391,12 +391,21 @@ class TranscriptSerializer(CamelInputModelSerializer):
     )
     department_name = serializers.SerializerMethodField(read_only=True)
     file = serializers.FileField(required=False, allow_null=True)
+    degree_level = serializers.ChoiceField(
+        choices=Transcript.DEGREE_LEVELS,
+        required=True,
+        error_messages={
+            "required": "Please select a degree level (Master's or Doctorate)",
+            "invalid_choice": "Degree level must be either Master's or Doctorate",
+        },
+    )
 
     class Meta:
         model = Transcript
         read_only_fields = ("id", "created_at")
         fields = (
             "id",
+            "degree_level",
             "degree",
             "college",
             "major",
@@ -417,6 +426,22 @@ class TranscriptSerializer(CamelInputModelSerializer):
         return uploaded
 
     def to_internal_value(self, data):
+        # Normalize/alias degree_level values from UI
+        if isinstance(data, dict) and "degree_level" in data:
+            # ensure we don't mutate original
+            data = data.copy()
+            val = str(data.get("degree_level", "")).strip()
+            mapping = {
+                "Masters": "Master's",
+                "Master's Degree": "Master's",
+                "Doctoral": "Doctorate",
+                "Doctoral Degree": "Doctorate",
+                "PhD": "Doctorate",
+                "Ph.D": "Doctorate",
+                "Ph.D.": "Doctorate",
+            }
+            data["degree_level"] = mapping.get(val, val)
+
         # Handle department if it's sent as a dictionary with id
         if (
             isinstance(data, dict)

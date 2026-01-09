@@ -123,6 +123,16 @@ const updateTranscript = async (id, formData) => {
   }
 };
 
+// Partial update for transcripts (e.g., updating only courses). Accepts plain JSON.
+const patchTranscript = async (id, body) => {
+  try {
+    const response = await api.patch(`transcripts/${id}/`, body);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const deleteTranscript = async (id) => {
   const response = await api.delete(`transcripts/${id}/`);
   return response.data;
@@ -442,6 +452,7 @@ export default {
   getTranscripts,
   createTranscript,
   updateTranscript,
+  patchTranscript,
   deleteTranscript,
 
   // certificates

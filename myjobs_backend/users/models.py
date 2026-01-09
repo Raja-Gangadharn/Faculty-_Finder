@@ -92,6 +92,11 @@ class Education(models.Model):
 
 class Transcript(models.Model):
     profile = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE, related_name='transcripts_list')
+    DEGREE_LEVELS = [
+        ("Master's", "Master's"),
+        ('Doctorate', 'Doctorate'),
+    ]
+    degree_level = models.CharField(max_length=20, choices=DEGREE_LEVELS, null=True, blank=True)
     degree = models.CharField(max_length=255)
     college = models.CharField(max_length=255)
     major = models.CharField(max_length=255, blank=True)
@@ -99,6 +104,8 @@ class Transcript(models.Model):
     department = models.ForeignKey(Department, null=True, blank=True, on_delete=models.SET_NULL, related_name='transcripts')
     file = models.FileField(upload_to='transcripts/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering = ['-year_completed', 'degree_level', 'degree']
 
     def __str__(self):
         return f"{self.degree} - {self.college}"

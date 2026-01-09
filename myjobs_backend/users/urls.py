@@ -10,7 +10,8 @@ from .views import (
     ExperienceListCreateView, ExperienceDetailView,
     SkillListCreateView, SkillDetailView,
     PresentationListCreateView, PresentationDetailView,
-    DocumentListCreateView, DocumentDetailView
+    DocumentListCreateView, DocumentDetailView,
+    FacultySearchView, RecruiterFacultyDetailView,
 )
 from .views_dropdowns import DegreeListView, CollegeListView, DepartmentListView
 
@@ -23,6 +24,12 @@ urlpatterns = [
     # Basic profile endpoints
     path('faculty/profile/', FacultyProfileDetail.as_view(), name='faculty-profile'),
     path('recruiter/profile/', RecruiterProfileDetail.as_view(), name='recruiter-profile'),
+
+    # recruiter aggregated faculty search
+    path('recruiter/faculty-search/', FacultySearchView.as_view(), name='recruiter-faculty-search'),
+
+    # recruiter faculty full detail by user id
+    path('recruiter/faculty/<int:user_id>/details/', RecruiterFacultyDetailView.as_view(), name='recruiter-faculty-detail'),
 
     # lookups
     path('api/colleges/', CollegeListView.as_view(), name='colleges-list'),

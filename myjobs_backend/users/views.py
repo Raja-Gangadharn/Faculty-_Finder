@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status, generics, permissions
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils import timezone
 from .email_utils import send_welcome_email, send_admin_notification
 
 from .serializers import (
@@ -139,6 +140,12 @@ class LoginView(APIView):
         user = authenticate(request, username=user.email, password=password)
 
         if user:
+            # Manually update last_login so the dashboard can show real relative time
+            try:
+                user.last_login = timezone.now()
+                user.save(update_fields=["last_login"])
+            except Exception:
+                pass
             refresh = RefreshToken.for_user(user)
             return Response({
                 "message": "Login successful",
@@ -467,3 +474,206 @@ class DocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DocumentSerializer
     permission_classes = [permissions.IsAuthenticated, IsApplicant, IsOwnerOrReadOnly]
 
+
+class FacultySearchView(APIView):
+    """
+    Read-only aggregated view for recruiters to search registered faculty.
+    Data comes exclusively from Transcript -> Courses and FacultyProfile.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsRecruiter]
+
+    def get(self, request):
+        profiles = (
+            FacultyProfile.objects.filter(transcripts_list__isnull=False)
+            .select_related("user")
+            .prefetch_related("transcripts_list__department", "transcripts_list__courses")
+            .distinct()
+        )
+
+        results = []
+        for p in profiles:
+            # Basic identity
+            first = (p.first_name or "").strip()
+            last = (p.last_name or "").strip()
+            full_name = f"{first} {last}".strip() or p.user.email
+            initials = "".join([s[0] for s in [first, last] if s])[:2].upper() or (p.user.email[:2].upper() if p.user.email else "")
+            photo_url = None
+            try:
+                if p.profile_photo:
+                    photo_url = request.build_absolute_uri(p.profile_photo.url)
+            except Exception:
+                photo_url = None
+
+            # Aggregate transcript-derived details
+            course_credit_total = 0.0
+            departments = []
+            degrees = []
+            degree_credits = []
+            courses = []
+
+            for t in p.transcripts_list.all():
+                dept_name = t.department.name if t.department else None
+                if dept_name and dept_name not in departments:
+                    departments.append(dept_name)
+
+                t_credits = 0.0
+                for c in t.courses.all():
+                    credit = float(c.credits or 0)
+                    t_credits += credit
+                    courses.append({"name": c.name, "credits": credit})
+                course_credit_total += t_credits
+
+                degrees.append({
+                    "institution": t.college,
+                    "degree": t.degree,
+                    "department": dept_name,
+                    "degree_level": t.degree_level,
+                    "label": f"{t.college} \u2013 {t.degree}" + (f" \u2013 {dept_name}" if dept_name else "")
+                })
+                degree_credits.append({
+                    "degree": t.degree,
+                    "credits": t_credits
+                })
+
+            results.append({
+                "id": p.user.id,
+                "profile_id": p.id,
+                "email": p.user.email,
+                "first_name": first,
+                "last_name": last,
+                "full_name": full_name,
+                "initials": initials,
+                "profile_photo_url": photo_url,
+                "course_credit_total": course_credit_total,
+                "courses": courses,
+                "degrees": degrees,
+                "degree_credits": degree_credits,
+                "departments": departments,
+            })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+
+class RecruiterFacultyDetailView(APIView):
+    """
+    Return full details for a specific faculty (by user_id) for recruiters only.
+    Includes:
+      - basic_info (from FacultyProfile + aggregated departments)
+      - education (Education + Transcript summaries)
+      - experience (Experience)
+      - applicable_courses (per-transcript degree row + nested courses)
+      - documents (uploaded documents)
+    """
+    permission_classes = [permissions.IsAuthenticated, IsRecruiter]
+
+    def get(self, request, user_id: int):
+        # Locate the faculty profile for the given user id
+        profile = FacultyProfile.objects.filter(user_id=user_id).select_related('user').first()
+        if not profile or not getattr(profile.user, 'is_faculty', False):
+            return Response({'detail': 'Faculty not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Prefetch transcripts, their departments and courses
+        profile = (
+            FacultyProfile.objects
+            .filter(pk=profile.pk)
+            .select_related('user')
+            .prefetch_related(
+                'transcripts_list__department',
+                'transcripts_list__courses__department',
+                'educations',
+                'experiences',
+                'documents'
+            )
+        ).first()
+
+        # Aggregate departments and compute per-transcript data
+        degrees_blocks = []
+        departments = []
+        transcripts_summary = []
+
+        for t in profile.transcripts_list.all():
+            dept_name = t.department.name if t.department else None
+            if dept_name and dept_name not in departments:
+                departments.append(dept_name)
+
+            # sum credits for this transcript
+            t_credit_sum = 0.0
+            course_rows = []
+            for c in t.courses.all():
+                credit = float(c.credits or 0)
+                t_credit_sum += credit
+                course_rows.append({
+                    'code': c.code,
+                    'name': c.name,
+                    'credits': credit,
+                    'department': c.department.name if c.department else None,
+                })
+
+            degrees_blocks.append({
+                'transcript_id': t.id,
+                'degree_name': t.degree_level,  # e.g., Master's / Doctorate
+                'college_name': t.college,
+                'degree': t.degree,
+                'major': t.major,
+                'department': dept_name,
+                'course_credit_total': t_credit_sum,
+                'courses': course_rows,
+            })
+
+            transcripts_summary.append({
+                'id': t.id,
+                'degree_level': t.degree_level,
+                'degree': t.degree,
+                'college': t.college,
+                'major': t.major,
+                'department_name': dept_name,
+                'year_completed': t.year_completed,
+            })
+
+        # Build basic info
+        first = (profile.first_name or '').strip()
+        last = (profile.last_name or '').strip()
+        full_name = f"{first} {last}".strip() or profile.user.email
+        photo_url = None
+        try:
+            if profile.profile_photo:
+                photo_url = request.build_absolute_uri(profile.profile_photo.url)
+        except Exception:
+            photo_url = None
+
+        basic_info = {
+            'id': profile.user.id,
+            'email': profile.user.email,
+            'first_name': first,
+            'last_name': last,
+            'full_name': full_name,
+            'designation': profile.title,
+            'profile_photo_url': photo_url,
+            'linkedin': profile.linkedin,
+            'phone': profile.phone,
+            'city': profile.city,
+            'state': profile.state,
+            'work_preference': profile.work_preference or [],
+            'departments': departments,
+        }
+
+        # Serialize education, experience, documents using existing serializers
+        edu_list = EducationSerializer(profile.educations.all(), many=True).data
+        exp_list = ExperienceSerializer(profile.experiences.all(), many=True).data
+        # include request so FileField returns absolute URL
+        doc_list = DocumentSerializer(profile.documents.all(), many=True, context={'request': request}).data
+
+        payload = {
+            'basic_info': basic_info,
+            'education': {
+                'educations': edu_list,
+                'transcripts': transcripts_summary,
+            },
+            'experience': exp_list,
+            'applicable_courses': {
+                'degrees': degrees_blocks,
+            },
+            'documents': doc_list,
+        }
+
+        return Response(payload, status=status.HTTP_200_OK)

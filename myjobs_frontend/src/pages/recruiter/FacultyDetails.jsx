@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Tab, Nav, Spinner, Alert, Button, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Tab, Nav, Spinner, Alert, Button, Modal, Table } from 'react-bootstrap';
 import "./recruiter.css";
-import { 
-  FaUser, FaGraduationCap, FaFileAlt, FaCertificate, 
-  FaUserTie, FaFilePdf, FaDownload, FaArrowLeft, FaEnvelope 
+import {
+  FaUser, FaGraduationCap, FaFileAlt,
+  FaUserTie, FaFilePdf, FaDownload, FaArrowLeft
 } from 'react-icons/fa';
-import { BsEnvelopePlus } from 'react-icons/bs';
 import JobSelectionModal from '../../components/recruiter/JobSelectionModal';
+import recruiterService from '../../services/recruiterService';
 
 // Default API configuration
 const API_BASE_URL = (import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8000/api').replace(/\/+$/, ''); // Remove trailing slashes
 
 const FacultyDetails = () => {
-  const { facultyId } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,6 +23,8 @@ const FacultyDetails = () => {
   const [isInviteSent, setIsInviteSent] = useState(false);
   const [isProfileMarked, setIsProfileMarked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
+  const [selectedDegree, setSelectedDegree] = useState(null);
 
   // Load current user data
   useEffect(() => {
@@ -39,11 +41,11 @@ const FacultyDetails = () => {
   const handleJobSelect = async (selectedJob) => {
     try {
       // Here you would typically send the invite to the backend
-      console.log('Sending invite with job:', selectedJob, 'to faculty:', facultyId);
-      
+      console.log('Sending invite with job:', selectedJob, 'to faculty:', id);
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setIsInviteSent(true);
       setShowJobSelectModal(false);
     } catch (error) {
@@ -52,53 +54,23 @@ const FacultyDetails = () => {
   };
 
   useEffect(() => {
-    // Mock faculty data
-    const mockFaculty = {
-      id: facultyId,
-      name: 'Dr. John Smith',
-      email: 'john.smith@example.com',
-      phone: '+1 (555) 123-4567',
-      department: 'Computer Science',
-      designation: 'Associate Professor',
-      experience: [
-        { 
-          position: 'Associate Professor', 
-          organization: 'Current University',
-          startDate: '2018',
-          endDate: 'Present',
-          description: 'Teaching advanced courses in Machine Learning and Data Science.'
-        },
-        { 
-          position: 'Assistant Professor', 
-          organization: 'Previous University',
-          startDate: '2015',
-          endDate: '2018',
-          description: 'Conducted research in AI and published several papers.'
-        }
-      ],
-      researchInterests: ['Machine Learning', 'Data Science', 'Artificial Intelligence'],
-      education: [
-        { degree: 'Ph.D', field: 'Computer Science', university: 'Stanford University', year: 2015 },
-        { degree: 'M.Tech', field: 'Computer Science', university: 'IIT Bombay', year: 2010 },
-        { degree: 'B.Tech', field: 'Computer Science', university: 'University of Delhi', year: 2008 }
-      ],
-      publications: [
-        { title: 'Advanced Machine Learning Techniques', year: 2022, journal: 'Journal of AI Research' },
-        { title: 'Deep Learning for Beginners', year: 2020, journal: 'International Conference on ML' }
-      ],
-      skills: ['Python', 'Machine Learning', 'Data Analysis', 'Deep Learning', 'Research'],
-      resumeUrl: '#',
-      transcriptsUrl: '#'
-    };
-
-    // Simulate API call with timeout
-    const timer = setTimeout(() => {
-      setFaculty(mockFaculty);
-      setLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [facultyId]);
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await recruiterService.getFacultyDetails(id);
+        if (!active) return;
+        setFaculty(data);
+        setError('');
+      } catch (err) {
+        if (!active) return;
+        setError('Failed to load faculty details.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [id]);
 
   const handleDownload = (fileUrl, fileName) => {
     // In a real app, this would initiate a download
@@ -125,11 +97,21 @@ const FacultyDetails = () => {
 
   if (!faculty) return null;
 
+  const basic = faculty.basic_info || {};
+  const education = faculty.education || {};
+  const experience = faculty.experience || [];
+  const degrees = (faculty.applicable_courses && faculty.applicable_courses.degrees) || [];
+  const documents = faculty.documents || [];
+  const openDegree = (deg) => {
+    setSelectedDegree(deg);
+    setShowCoursesModal(true);
+  };
+
   return (
     <Container className="faculty-details-container py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <a 
-          href="#" 
+        <a
+          href="#"
           className="btn btn-outline-success text-decoration-none"
           onClick={(e) => {
             e.preventDefault();
@@ -139,15 +121,15 @@ const FacultyDetails = () => {
           <FaArrowLeft className="me-1" /> Back to Results
         </a>
         <div className="d-flex gap-2">
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             className="me-2"
             onClick={() => setShowJobSelectModal(true)}
             disabled={isInviteSent}
           >
             {isInviteSent ? 'Invitation Sent' : 'Send Job Invite'}
           </Button>
-          <button 
+          <button
             className={`btn ${isProfileMarked ? 'btn-danger' : 'btn-outline-danger'}`}
             onClick={() => isProfileMarked ? null : setShowMarkConfirm(true)}
             disabled={isProfileMarked}
@@ -158,7 +140,7 @@ const FacultyDetails = () => {
       </div>
 
       {/* Job Selection Modal */}
-      <JobSelectionModal 
+      <JobSelectionModal
         show={showJobSelectModal}
         onHide={() => setShowJobSelectModal(false)}
         onSelect={handleJobSelect}
@@ -179,8 +161,8 @@ const FacultyDetails = () => {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowMarkConfirm(false)}>Cancel</button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn btn-danger"
                   onClick={() => {
                     setIsProfileMarked(true);
@@ -199,27 +181,28 @@ const FacultyDetails = () => {
       <Card className="shadow-sm mb-4 profile-header">
         <Card.Body className="p-4">
           <div className="d-flex align-items-center">
-            <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
-                 style={{ width: '80px', height: '80px', fontSize: '2rem' }}>
-              {faculty.name ? faculty.name.charAt(0).toUpperCase() : 'F'}
-            </div>
-            <div className="ms-4">
-              <h2 className="mb-1">{faculty.name || 'Faculty Member'}</h2>
-              <p className="text-muted mb-2">{faculty.designation || 'Professor'}</p>
-              <div className="d-flex flex-wrap gap-2">
-                {faculty.department && (
-                  <span className="badge bg-primary">{faculty.department}</span>
-                )}
-                {faculty.specialization && (
-                  <span className="badge bg-secondary">{faculty.specialization}</span>
-                )}
+            {basic.profile_photo_url ? (
+              <img src={basic.profile_photo_url} alt={basic.full_name || 'Faculty'} className="rounded-circle" style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
+            ) : (
+              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px', fontSize: '2rem' }}>
+                {(basic.full_name || 'F').charAt(0).toUpperCase()}
               </div>
+            )}
+            <div className="ms-4">
+              <h2 className="mb-1">{basic.full_name || 'Faculty Member'}</h2>
+              {Array.isArray(basic.departments) && basic.departments.length > 0 && (
+                <div className="d-flex flex-wrap gap-2">
+                  {basic.departments.map((d, idx) => (
+                    <span key={idx} className="badge bg-primary">{d}</span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </Card.Body>
       </Card>
 
-<Tab.Container defaultActiveKey="basic">
+      <Tab.Container defaultActiveKey="basic">
         <Card className="shadow-sm">
           <Card.Header className="bg-white border-bottom-0">
             <Nav variant="tabs" className="border-0">
@@ -239,8 +222,8 @@ const FacultyDetails = () => {
                 </Nav.Link>
               </Nav.Item>
               <Nav.Item>
-                <Nav.Link eventKey="certificates" className="text-dark">
-                  <FaCertificate className="me-2" /> Certificates
+                <Nav.Link eventKey="courses" className="text-dark">
+                  <FaFileAlt className="me-2" /> Applicable Course(s)
                 </Nav.Link>
               </Nav.Item>
               <Nav.Item>
@@ -250,7 +233,7 @@ const FacultyDetails = () => {
               </Nav.Item>
             </Nav>
           </Card.Header>
-          
+
           <Card.Body>
             <Tab.Content>
               {/* Basic Information Tab */}
@@ -259,27 +242,27 @@ const FacultyDetails = () => {
                 <Row className="mb-3">
                   <Col md={6} className="mb-3">
                     <h6 className="text-muted">Full Name</h6>
-                    <p>{faculty.name || 'Not provided'}</p>
+                    <p>{basic.full_name || 'Not provided'}</p>
                   </Col>
                   <Col md={6} className="mb-3">
                     <h6 className="text-muted">Email</h6>
-                    <p>{faculty.email || 'Not provided'}</p>
+                    <p>{basic.email || 'Not provided'}</p>
                   </Col>
                   <Col md={6} className="mb-3">
                     <h6 className="text-muted">Phone</h6>
-                    <p>{faculty.phone || 'Not provided'}</p>
+                    <p>{basic.phone || 'Not provided'}</p>
                   </Col>
                   <Col md={6} className="mb-3">
                     <h6 className="text-muted">Department</h6>
-                    <p>{faculty.department || 'Not specified'}</p>
+                    <p>{(basic.departments && basic.departments.length) ? basic.departments.join(', ') : 'Not specified'}</p>
                   </Col>
                   <Col md={6} className="mb-3">
-                    <h6 className="text-muted">Designation</h6>
-                    <p>{faculty.designation || 'Not specified'}</p>
+                    <h6 className="text-muted">Work Preference</h6>
+                    <p>{basic.work_preference || 'Not specified'}</p>
                   </Col>
                   <Col md={6} className="mb-3">
-                    <h6 className="text-muted">Specialization</h6>
-                    <p>{faculty.specialization || 'Not specified'}</p>
+                    <h6 className="text-muted">Location</h6>
+                    <p>{[basic.city, basic.state].filter(Boolean).join(', ') || 'Not specified'}</p>
                   </Col>
                 </Row>
               </Tab.Pane>
@@ -288,27 +271,17 @@ const FacultyDetails = () => {
               <Tab.Pane eventKey="education">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h4>Education</h4>
-                  {faculty.transcript && (
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm"
-                      onClick={() => handleDownload(faculty.transcript, 'transcript.pdf')}
-                    >
-                      <FaDownload className="me-2" /> Download Transcript
-                    </Button>
-                  )}
                 </div>
-                
-                {faculty.education?.length > 0 ? (
+                {education?.educations?.length > 0 ? (
                   <div className="timeline">
-                    {faculty.education.map((edu, index) => (
+                    {education.educations.map((edu, index) => (
                       <div key={index} className="timeline-item">
                         <div className="timeline-badge bg-primary"></div>
                         <div className="timeline-content p-3 mb-3 border rounded">
                           <h5>{edu.degree}</h5>
                           <p className="mb-1">{edu.institution}</p>
                           <p className="text-muted small mb-1">
-                            {edu.startYear} - {edu.endYear || 'Present'}
+                            {edu.start_year} - {edu.end_year || 'Present'}
                             {edu.gpa && ` • GPA: ${edu.gpa}`}
                           </p>
                           {edu.description && <p className="mb-0">{edu.description}</p>}
@@ -324,23 +297,23 @@ const FacultyDetails = () => {
               {/* Experience Tab */}
               <Tab.Pane eventKey="experience">
                 <h4 className="mb-4">Work Experience</h4>
-                {faculty.experience?.length > 0 ? (
+                {Array.isArray(experience) && experience.length > 0 ? (
                   <div className="timeline">
-                    {faculty.experience.map((exp, index) => (
+                    {experience.map((exp, index) => (
                       <div key={index} className="timeline-item">
                         <div className="timeline-badge bg-success"></div>
                         <div className="timeline-content p-3 mb-3 border rounded">
                           <div className="d-flex justify-content-between">
-                            <h5 className="mb-1">{exp.position}</h5>
+                            <h5 className="mb-1">{exp.position || exp.exp_type}</h5>
                             <span className="text-muted">
-                              {exp.startDate} - {exp.endDate || 'Present'}
+                              {exp.start_date} - {exp.end_date || 'Present'}
                             </span>
                           </div>
-                          <p className="mb-1">{exp.organization}</p>
-                          {exp.description && (
+                          <p className="mb-1">{exp.institution_or_company}</p>
+                          {exp.responsibilities && (
                             <div className="mt-2">
                               <h6>Responsibilities:</h6>
-                              <p className="mb-0">{exp.description}</p>
+                              <p className="mb-0">{exp.responsibilities}</p>
                             </div>
                           )}
                         </div>
@@ -352,48 +325,48 @@ const FacultyDetails = () => {
                 )}
               </Tab.Pane>
 
-              {/* Certificates Tab */}
-              <Tab.Pane eventKey="certificates">
-                <h4 className="mb-4">Certifications</h4>
-                {faculty.certificates?.length > 0 ? (
-                  <Row>
-                    {faculty.certificates.map((cert, index) => (
-                      <Col md={6} key={index} className="mb-3">
-                        <Card>
-                          <Card.Body>
-                            <div className="d-flex justify-content-between align-items-start">
-                              <div>
-                                <h5 className="mb-1">{cert.name}</h5>
-                                <p className="text-muted mb-1">{cert.issuingOrganization}</p>
-                                <small className="text-muted">
-                                  Issued: {cert.issueDate}
-                                  {cert.expirationDate && ` • Expires: ${cert.expirationDate}`}
-                                </small>
-                              </div>
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm"
-                                onClick={() => handleDownload(cert.certificateUrl, `${cert.name.replace(/\s+/g, '_')}.pdf`)}
-                              >
-                                <FaDownload />
-                              </Button>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
+              {/* Applicable Course(s) Tab */}
+              <Tab.Pane eventKey="courses">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h4 className="mb-0">Applicable Course(s)</h4>
+                </div>
+                {degrees.length === 0 ? (
+                  <Alert variant="info">No transcript degrees found.</Alert>
                 ) : (
-                  <Alert variant="info">No certificates provided.</Alert>
+                  <div className="table-responsive">
+                    <Table hover className="align-middle">
+                      <thead className="table-dark">
+                        <tr>
+                          <th>Degree Name</th>
+                          <th>College Name</th>
+                          <th>Degree</th>
+                          <th>Major</th>
+                          <th>Department</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {degrees.map((d) => (
+                          <tr key={d.transcript_id} style={{ cursor: 'pointer' }} onClick={() => openDegree(d)}>
+                            <td>{d.degree_name}</td>
+                            <td>{d.college_name}</td>
+                            <td>{d.degree}</td>
+                            <td>{d.major}</td>
+                            <td>{d.department}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
                 )}
               </Tab.Pane>
 
               {/* Documents Tab */}
-              <Tab.Pane eventKey="documents">
+              <Tab.Pane eventKey="documents"
+              >
                 <h4 className="mb-4">Documents</h4>
-                {faculty.documents?.length > 0 ? (
+                {Array.isArray(documents) && documents.length > 0 ? (
                   <Row>
-                    {faculty.documents.map((doc, index) => (
+                    {documents.map((doc, index) => (
                       <Col md={6} key={index} className="mb-3">
                         <Card>
                           <Card.Body className="d-flex justify-content-between align-items-center">
@@ -402,14 +375,14 @@ const FacultyDetails = () => {
                               <div>
                                 <h6 className="mb-0">{doc.name}</h6>
                                 <small className="text-muted">
-                                  {doc.type} • {doc.size}
+                                  {doc.doc_type} • {doc.size}
                                 </small>
                               </div>
                             </div>
-                            <Button 
-                              variant="outline-primary" 
+                            <Button
+                              variant="outline-primary"
                               size="sm"
-                              onClick={() => handleDownload(doc.url, doc.name)}
+                              onClick={() => handleDownload(doc.file, doc.name)}
                             >
                               <FaDownload className="me-1" /> Download
                             </Button>
@@ -426,6 +399,56 @@ const FacultyDetails = () => {
           </Card.Body>
         </Card>
       </Tab.Container>
+      {/* Courses Modal */}
+      <Modal show={showCoursesModal} onHide={() => setShowCoursesModal(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Course Details - {selectedDegree?.degree_name} {selectedDegree?.degree ? `(${selectedDegree.degree})` : ''}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedDegree ? (
+            <>
+              <div className="mb-3">
+                <strong>College:</strong> {selectedDegree.college_name || 'N/A'}<br />
+                <strong>Major:</strong> {selectedDegree.major || 'N/A'}<br />
+                <strong>Department:</strong> {selectedDegree.department || 'N/A'}
+              </div>
+              {Array.isArray(selectedDegree.courses) && selectedDegree.courses.length > 0 ? (
+                <div className="table-responsive">
+                  <Table bordered hover>
+                    <thead>
+                      <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Credit Hours</th>
+                        <th>Department</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedDegree.courses.map((c, idx) => (
+                        <tr key={idx}>
+                          <td>{c.code}</td>
+                          <td>{c.name}</td>
+                          <td>{c.credits}</td>
+                          <td>{c.department}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              ) : (
+                <Alert variant="info">No courses found for this degree.</Alert>
+              )}
+            </>
+          ) : (
+            <Alert variant="info">No degree selected.</Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCoursesModal(false)}>Close</Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

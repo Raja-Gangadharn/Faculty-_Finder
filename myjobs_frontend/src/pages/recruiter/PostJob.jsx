@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from 'react-bootstrap';
-import { Card, Form, Button, Row, Col, Table, Alert, Badge, Dropdown } from 'react-bootstrap';
-import { FaPlusCircle, FaTrash, FaBriefcase, FaMapMarkerAlt, FaMoneyBillWave, FaCalendarAlt, FaEllipsisV } from 'react-icons/fa';
+import { Card, Form, Button, Row, Col, Table, Alert, Badge, Dropdown, Spinner } from 'react-bootstrap';
+import { FaPlusCircle, FaTrash, FaBriefcase, FaMapMarkerAlt, FaMoneyBillWave, FaCalendarAlt, FaEllipsisV, FaBuilding } from 'react-icons/fa';
 import { BsCardChecklist } from 'react-icons/bs';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
+import { jobService } from '../../services/jobService';
 import './recruiter.css';
 
 
 const PostJob = () => {
   const [formData, setFormData] = useState({
     title: '',
+    department: '',
     description: '',
-    salary: '',
     location: '',
+    job_type: 'onsite',
     experience: '',
     course: '',
     eligibility: '',
@@ -30,37 +33,38 @@ const PostJob = () => {
     }));
   };
 
-  const [jobs, setJobs] = useState([
-    // Sample data - remove this in production
-    {
-      id: '1',
-      title: 'Senior React Developer',
-      location: 'New York, NY',
-      salary: '$120,000 - $150,000',
-      deadline: '2023-12-31',
-      status: 'open'
-    },
-    {
-      id: '2',
-      title: 'UX/UI Designer',
-      location: 'Remote',
-      salary: '$90,000 - $110,000',
-      deadline: '2023-11-30',
-      status: 'paused'
-    },
-    {
-      id: '3',
-      title: 'Backend Engineer',
-      location: 'San Francisco, CA',
-      salary: '$130,000 - $160,000',
-      deadline: '2023-12-15',
-      status: 'closed'
-    }
-  ]);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchingJobs, setFetchingJobs] = useState(true);
   const [validated, setValidated] = useState(false);
   const [showAlert, setShowAlert] = useState({ show: false, message: '', variant: 'success' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
+
+  const { user } = useAuth();
+
+  // Fetch jobs on component mount
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      setFetchingJobs(true);
+      const jobsData = await jobService.getMyJobs();
+      console.log('Fetched jobs data:', jobsData); // Debug log
+      setJobs(jobsData);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      setShowAlert({
+        show: true,
+        message: 'Failed to fetch jobs. Please try again.',
+        variant: 'danger'
+      });
+    } finally {
+      setFetchingJobs(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -70,17 +74,36 @@ const PostJob = () => {
     }));
   };
 
-  const handleStatusChange = (jobId, newStatus) => {
-    setJobs(jobs.map(job => 
-      job.id === jobId ? { ...job, status: newStatus } : job
-    ));
-    // Close the dropdown after selection
-    toggleDropdown(jobId, false);
-    // Here you would typically make an API call to update the status
-    console.log(`Updating job ${jobId} status to ${newStatus}`);
+  const handleStatusChange = async (jobId, newStatus) => {
+    try {
+      await jobService.updateJobStatus(jobId, newStatus);
+
+      // Update local state
+      setJobs(jobs.map(job =>
+        job.id === jobId ? { ...job, status: newStatus } : job
+      ));
+
+      // Close the dropdown after selection
+      toggleDropdown(jobId, false);
+
+      setShowAlert({
+        show: true,
+        message: `Job status updated to ${newStatus}`,
+        variant: 'success'
+      });
+      setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
+    } catch (error) {
+      console.error('Error updating job status:', error);
+      setShowAlert({
+        show: true,
+        message: 'Failed to update job status. Please try again.',
+        variant: 'danger'
+      });
+    }
   };
 
   const getStatusBadgeVariant = (status) => {
+    if (!status) return 'light';
     switch (status) {
       case 'open':
         return 'success';
@@ -94,10 +117,11 @@ const PostJob = () => {
   };
 
   const getStatusDisplayText = (status) => {
+    if (!status) return 'Unknown';
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
 
@@ -107,35 +131,61 @@ const PostJob = () => {
       return;
     }
 
-    const newJob = {
-      id: crypto.randomUUID(),
-      status: 'open', // Default status for new jobs
-      ...formData,
-      postedAt: new Date(),
-    };
+    try {
+      setLoading(true);
 
-    setJobs((prev) => [newJob, ...prev]);
+      // Prepare job data for API
+      const jobData = {
+        title: formData.title,
+        department: formData.department,
+        description: formData.description,
+        location: formData.location,
+        job_type: formData.job_type,
+        experience_years: parseInt(formData.experience) || 0,
+        course: formData.course,
+        eligibility: formData.eligibility,
+        skills_required: formData.skills,
+        deadline: formData.deadline,
+        pdf_document: formData.pdf,
+      };
 
-    setFormData({
-      title: '',
-      description: '',
-      salary: '',
-      location: '',
-      experience: '',
-      course: '',
-      eligibility: '',
-      skills: '',
-      deadline: '',
-      pdf: null,
-    });
+      const newJob = await jobService.createJob(jobData);
 
-    setValidated(false); // reset validation state
-    setShowAlert({
-      show: true,
-      message: 'Job posted successfully!',
-      variant: 'success'
-    });
-    setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
+      // Add new job to the beginning of the list
+      setJobs((prev) => [newJob, ...prev]);
+
+      // Reset form
+      setFormData({
+        title: '',
+        department: '',
+        description: '',
+        location: '',
+        job_type: 'onsite',
+        experience: '',
+        course: '',
+        eligibility: '',
+        skills: '',
+        deadline: '',
+        pdf: null,
+      });
+
+      setValidated(false);
+      setShowAlert({
+        show: true,
+        message: 'Job posted successfully!',
+        variant: 'success'
+      });
+      setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
+    } catch (error) {
+      console.error('Error creating job:', error);
+      setShowAlert({
+        show: true,
+        message: error.message || 'Failed to post job. Please try again.',
+        variant: 'danger'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const todayISO = new Date().toISOString().split('T')[0];
@@ -150,15 +200,25 @@ const PostJob = () => {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
-    setJobs(jobs.filter(job => job.id !== jobToDelete));
-    setShowDeleteConfirm(false);
-    setShowAlert({
-      show: true,
-      message: 'Job deleted successfully!',
-      variant: 'danger'
-    });
-    setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
+  const confirmDelete = async () => {
+    try {
+      await jobService.deleteJob(jobToDelete);
+      setJobs(jobs.filter(job => job.id !== jobToDelete));
+      setShowDeleteConfirm(false);
+      setShowAlert({
+        show: true,
+        message: 'Job deleted successfully!',
+        variant: 'success'
+      });
+      setTimeout(() => setShowAlert({ ...showAlert, show: false }), 3000);
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      setShowAlert({
+        show: true,
+        message: 'Failed to delete job. Please try again.',
+        variant: 'danger'
+      });
+    }
   };
 
   const cancelDelete = () => {
@@ -226,24 +286,23 @@ const PostJob = () => {
                   </Form.Control.Feedback>
                 </div>
               </Form.Group>
-
-              <Form.Group as={Col} md="6" controlId="salaryRange">
+              <Form.Group as={Col} md="6" controlId="department">
                 <Form.Label className="fw-medium">
-                  <FaMoneyBillWave className="me-2 text-muted" />
-                  Salary Range *
+                  <FaBuilding className="me-2 text-muted" />
+                  Department *
                 </Form.Label>
                 <div className="form-icon-wrapper">
                   <Form.Control
                     required
                     type="text"
-                    placeholder="e.g., ₹8,00,000 - ₹12,00,000"
-                    name="salary"
-                    value={formData.salary}
+                    placeholder="e.g., Computer Science"
+                    name="department"
+                    value={formData.department}
                     onChange={handleChange}
                     className="py-2 ps-4"
                   />
                   <Form.Control.Feedback type="invalid">
-                    Salary range is required.
+                    Department is required.
                   </Form.Control.Feedback>
                 </div>
               </Form.Group>
@@ -271,23 +330,26 @@ const PostJob = () => {
                 </div>
               </Form.Group>
 
-              <Form.Group as={Col} md="6" controlId="deadline">
+              <Form.Group as={Col} md="6" controlId="jobType">
                 <Form.Label className="fw-medium">
-                  <FaCalendarAlt className="me-2 text-muted" />
-                  Application Deadline *
+                  <FaBriefcase className="me-2 text-muted" />
+                  Job Type *
                 </Form.Label>
                 <div className="form-icon-wrapper">
-                  <Form.Control
+                  <Form.Select
                     required
-                    type="date"
-                    name="deadline"
-                    min={todayISO}
-                    value={formData.deadline}
+                    name="job_type"
+                    value={formData.job_type}
                     onChange={handleChange}
                     className="py-2 ps-4"
-                  />
+                  >
+                    <option value="onsite">Onsite</option>
+                    <option value="remote">Remote</option>
+                    <option value="full_time">Full Time</option>
+                    <option value="part_time">Part Time</option>
+                  </Form.Select>
                   <Form.Control.Feedback type="invalid">
-                    Deadline is required.
+                    Job type is required.
                   </Form.Control.Feedback>
                 </div>
               </Form.Group>
@@ -311,6 +373,29 @@ const PostJob = () => {
                 Description is required.
               </Form.Control.Feedback>
             </Form.Group>
+
+            <Row className="mb-3 g-3">
+              <Form.Group as={Col} md="6" controlId="deadline">
+                <Form.Label className="fw-medium">
+                  <FaCalendarAlt className="me-2 text-muted" />
+                  Application Deadline *
+                </Form.Label>
+                <div className="form-icon-wrapper">
+                  <Form.Control
+                    required
+                    type="date"
+                    name="deadline"
+                    min={todayISO}
+                    value={formData.deadline}
+                    onChange={handleChange}
+                    className="py-2 ps-4"
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Application deadline is required.
+                  </Form.Control.Feedback>
+                </div>
+              </Form.Group>
+            </Row>
 
             <Row className="mb-3">
               <Form.Group as={Col} md="6" controlId="experience">
@@ -396,9 +481,19 @@ const PostJob = () => {
                 variant="success"
                 type="submit"
                 className="px-4 py-2 fw-medium"
+                disabled={loading}
               >
-                <FaPlusCircle className="me-2" />
-                Post Job
+                {loading ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                    Posting...
+                  </>
+                ) : (
+                  <>
+                    <FaPlusCircle className="me-2" />
+                    Post Job
+                  </>
+                )}
               </Button>
             </motion.div>
           </Form>
@@ -406,7 +501,14 @@ const PostJob = () => {
       </Card>
 
       <h4 className="mb-3">Your Posted Jobs</h4>
-      {jobs.length === 0 ? (
+      {fetchingJobs ? (
+        <div className="text-center py-4">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading jobs...</span>
+          </Spinner>
+          <p className="mt-2 text-muted">Loading your posted jobs...</p>
+        </div>
+      ) : jobs.length === 0 ? (
         <p className="text-muted">No jobs posted yet.</p>
       ) : (
         <Card className="shadow-sm border-0 mt-4">
@@ -417,106 +519,118 @@ const PostJob = () => {
                 Showing {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}
               </Badge>
             </div>
-            <div className="table-responsive">
+            <div className="table-responsive" style={{ overflow: 'visible' }}>
               <Table hover className="align-middle">
                 <thead className="table-light">
                   <tr>
-                    <th>JOB TITLE</th>
-                    <th>LOCATION</th>
-                    <th>SALARY</th>
-                    <th>DEADLINE</th>
-                    <th>STATUS</th>
+                    <th>Job Title</th>
+                    <th>Location</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
                     <th className="text-center">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {jobs.map((job) => (
-                    <motion.tr
-                      key={job.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="position-relative"
-                    >
-                      <td>
-                        <div className="d-flex flex-column">
-                          <span className="fw-medium">{job.title}</span>
-                          <small className="text-muted">Posted on {new Date().toLocaleDateString()}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <FaMapMarkerAlt className="text-primary me-2" />
-                          <span>{job.location}</span>
-                        </div>
-                      </td>
-                      <td className="text-nowrap">{job.salary}</td>
-                      <td className="text-nowrap">
-                        <div className="d-flex align-items-center">
-                          <FaCalendarAlt className="text-muted me-2" />
-                          {new Date(job.deadline).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td>
-                        <Dropdown 
-                          show={dropdownOpen[job.id]} 
-                          onToggle={(isOpen) => toggleDropdown(job.id, isOpen)}
-                        >
-                          <Dropdown.Toggle 
-                            variant={getStatusBadgeVariant(job.status)}
-                            id={`status-dropdown-${job.id}`}
-                            className="d-flex align-items-center"
-                            style={{
-                              minWidth: '100px',
-                              justifyContent: 'space-between',
-                              padding: '0.25rem 0.75rem'
-                            }}
+                  {jobs.map((job) => {
+                    // Defensive checks to prevent undefined errors
+                    if (!job || !job.id) return null;
+
+                    return (
+                      <motion.tr
+                        key={job.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="position-relative"
+                      >
+                        <td>
+                          <div className="d-flex flex-column">
+                            <span className="fw-medium">{job.title || 'Untitled Job'}</span>
+                            <small className="text-muted">Posted on {job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Unknown date'}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <FaMapMarkerAlt className="text-primary me-2" />
+                            <span>{job.location || 'Not specified'}</span>
+                          </div>
+                        </td>
+                        <td className="text-nowrap">
+                          <div className="d-flex align-items-center">
+                            <FaCalendarAlt className="text-muted me-2" />
+                            {job.deadline ? new Date(job.deadline).toLocaleDateString() : 'No deadline'}
+                          </div>
+                        </td>
+                        <td>
+                          <Dropdown
+                            show={dropdownOpen[job.id]}
+                            onToggle={(isOpen) => toggleDropdown(job.id, isOpen)}
+                            drop="down"
                           >
-                            {getStatusDisplayText(job.status)}
-                          </Dropdown.Toggle>
-                          <Dropdown.Menu>
-                            <Dropdown.Item 
-                              active={job.status === 'open'}
-                              onClick={() => handleStatusChange(job.id, 'open')}
-                              className="d-flex align-items-center text-decoration-none"
+                            <Dropdown.Toggle
+                              variant={getStatusBadgeVariant(job.status)}
+                              id={`status-dropdown-${job.id}`}
+                              className="d-flex align-items-center"
+                              style={{
+                                minWidth: '100px',
+                                justifyContent: 'space-between',
+                                padding: '0.25rem 0.75rem',
+                                position: 'relative',
+                                zIndex: 1
+                              }}
                             >
-                              <span className="badge bg-success me-2"></span>
-                              Open
-                            </Dropdown.Item>
-                            <Dropdown.Item 
-                              active={job.status === 'paused'}
-                              onClick={() => handleStatusChange(job.id, 'paused')}
-                              className="d-flex align-items-center text-decoration-none"
+                              {getStatusDisplayText(job.status)}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu
+                              style={{
+                                position: 'absolute',
+                                zIndex: 1050,
+                                minWidth: '120px'
+                              }}
                             >
-                              <span className="badge bg-warning me-2"></span>
-                              Paused
-                            </Dropdown.Item>
-                            <Dropdown.Item 
-                              active={job.status === 'closed'}
-                              onClick={() => handleStatusChange(job.id, 'closed')}
-                              className="d-flex align-items-center text-decoration-none"
+                              <Dropdown.Item
+                                active={job.status === 'open'}
+                                onClick={() => handleStatusChange(job.id, 'open')}
+                                className="d-flex align-items-center text-decoration-none"
+                              >
+                                <span className="badge bg-success me-2"></span>
+                                Open
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                active={job.status === 'paused'}
+                                onClick={() => handleStatusChange(job.id, 'paused')}
+                                className="d-flex align-items-center text-decoration-none"
+                              >
+                                <span className="badge bg-warning me-2"></span>
+                                Paused
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                active={job.status === 'closed'}
+                                onClick={() => handleStatusChange(job.id, 'closed')}
+                                className="d-flex align-items-center text-decoration-none"
+                              >
+                                <span className="badge bg-secondary me-2"></span>
+                                Closed
+                              </Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown>
+                        </td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            <button
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={() => {
+                                setJobToDelete(job.id);
+                                setShowDeleteConfirm(true);
+                              }}
                             >
-                              <span className="badge bg-secondary me-2"></span>
-                              Closed
-                            </Dropdown.Item>
-                          </Dropdown.Menu>
-                        </Dropdown>
-                      </td>
-                      <td className="text-center">
-                        <div className="d-flex justify-content-center gap-2">
-                          <button 
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={() => {
-                              setJobToDelete(job.id);
-                              setShowDeleteConfirm(true);
-                            }}
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </Table>
             </div>

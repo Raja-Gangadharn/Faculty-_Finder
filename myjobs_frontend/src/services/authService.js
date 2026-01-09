@@ -55,6 +55,10 @@ export const logout = () => {
   localStorage.removeItem("is_verified");
 };
 
+export const getToken = () => {
+  return localStorage.getItem("access_token");
+};
+
 // -------- Axios Interceptors --------
 api.interceptors.request.use(
   (config) => {
