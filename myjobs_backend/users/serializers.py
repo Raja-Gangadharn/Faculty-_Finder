@@ -90,7 +90,7 @@ class UserSerializer(serializers.ModelSerializer):
 class FacultyRegistrationSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
-    work_preference = serializers.CharField()
+    work_preference = serializers.CharField(required=True)
     resume = serializers.FileField(required=True)
     transcripts = serializers.FileField(required=True)
     password = serializers.CharField(write_only=True)
@@ -106,6 +106,12 @@ class FacultyRegistrationSerializer(serializers.ModelSerializer):
             "resume",
             "transcripts",
         ]
+
+    def validate_work_preference(self, value):
+        """Validate work_preference field"""
+        if not value:
+            raise serializers.ValidationError("Work preference is required")
+        return value
 
     def create(self, validated_data):
         profile_data = {

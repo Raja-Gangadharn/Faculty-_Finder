@@ -71,45 +71,57 @@ class FacultyRegistrationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # data = _normalize_work_pref_in_request_data(request.data)
-        # serializer = FacultyRegistrationSerializer(data=data)
-        serializer = FacultyRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                user = serializer.save()
+        try:
+            # Debug: Print incoming data
+            print("Incoming registration data:", request.data)
+            print("Files:", request.FILES)
+            
+            serializer = FacultyRegistrationSerializer(data=request.data)
+            if serializer.is_valid():
+                try:
+                    user = serializer.save()
+                    
+                    # Get the faculty profile to access first_name and last_name
+                    faculty_profile = user.facultyprofile
+                    
+                    # Send welcome email to faculty
+                    send_welcome_email(
+                        user_email=user.email,
+                        first_name=faculty_profile.first_name
+                    )
+                    
+                    # Send notification to admin
+                    send_admin_notification(
+                        user_email=user.email,
+                        first_name=faculty_profile.first_name,
+                        last_name=faculty_profile.last_name
+                    )
+                    
+                    return Response({
+                        "message": "Faculty registered successfully. Please check your email for confirmation.",
+                        "user_id": user.id,
+                        "email": user.email,
+                        "is_faculty": user.is_faculty,
+                    }, status=status.HTTP_201_CREATED)
+                    
+                except Exception as e:
+                    # Log the error but don't expose it to the user
+                    print(f"Error sending emails: {str(e)}")
+                    return Response(
+                        {"message": "Registration successful, but there was an issue sending the confirmation email. Please contact support."},
+                        status=status.HTTP_201_CREATED
+                    )
+            else:
+                # Debug: Print validation errors
+                print("Validation errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
-                # Get the faculty profile to access first_name and last_name
-                faculty_profile = user.facultyprofile
-                
-                # Send welcome email to faculty
-                send_welcome_email(
-                    user_email=user.email,
-                    first_name=faculty_profile.first_name
-                )
-                
-                # Send notification to admin
-                send_admin_notification(
-                    user_email=user.email,
-                    first_name=faculty_profile.first_name,
-                    last_name=faculty_profile.last_name
-                )
-                
-                return Response({
-                    "message": "Faculty registered successfully. Please check your email for confirmation.",
-                    "user_id": user.id,
-                    "email": user.email,
-                    "is_faculty": user.is_faculty,
-                }, status=status.HTTP_201_CREATED)
-                
-            except Exception as e:
-                # Log the error but don't expose it to the user
-                print(f"Error sending emails: {str(e)}")
-                return Response(
-                    {"message": "Registration successful, but there was an issue sending the confirmation email. Please contact support."},
-                    status=status.HTTP_201_CREATED
-                )
-                
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Unexpected error in registration: {str(e)}")
+            return Response(
+                {"detail": "An unexpected error occurred during registration. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class RecruiterRegistrationView(APIView):
     permission_classes = [AllowAny]

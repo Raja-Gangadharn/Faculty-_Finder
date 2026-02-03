@@ -146,20 +146,26 @@ export const loginUser = async (email, password) => {
 //   }
 // };
 export const registerFaculty = async (formData) => {
-  const data = new FormData();
-  data.append("first_name", formData.firstName);
-  data.append("last_name", formData.lastName);
-  data.append("email", formData.email);
-  data.append("password", formData.password);
-  data.append("work_preference", formData.workPreference); // 그대로
-  data.append("resume", formData.resume);
-  data.append("transcripts", formData.transcripts);
+  try {
+    const data = new FormData();
+    data.append("first_name", formData.firstName);
+    data.append("last_name", formData.lastName);
+    data.append("email", formData.email);
+    data.append("password", formData.password);
+    data.append("work_preference", formData.workPreference);
+    data.append("resume", formData.resume);
+    data.append("transcripts", formData.transcripts);
 
-  const response = await api.post("faculty/register/", data, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+    const api = axios.create({
+          baseURL: API_BASE_URL,
+    });
 
-  return response.data;
+
+    return response.data;
+  } catch (error) {
+    console.error("Faculty registration error:", error.response?.data);
+    throw error.response?.data || { detail: "Faculty registration failed" };
+  }
 };
 
 
