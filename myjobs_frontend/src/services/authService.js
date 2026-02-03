@@ -160,6 +160,9 @@ export const registerFaculty = async (formData) => {
           baseURL: API_BASE_URL,
     });
 
+    const response = await api.post("faculty/register/", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
     return response.data;
   } catch (error) {
