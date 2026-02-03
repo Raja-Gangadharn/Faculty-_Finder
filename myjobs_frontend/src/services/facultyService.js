@@ -432,9 +432,9 @@ const deleteDocument = async (id) => {
 };
 
 // -------- Lookup Data --------
-const getDegrees = () => api.get('/api/degrees/');
-const getColleges = () => api.get('/api/colleges/');
-const getDepartments = () => api.get('/api/departments/');
+const getDegrees = () => api.get('degrees/');
+const getColleges = () => api.get('colleges/');
+const getDepartments = () => api.get('departments/');
 
 // -------- Export --------
 export default {
