@@ -87,14 +87,12 @@ class UserSerializer(serializers.ModelSerializer):
         return None
 
 
-class FacultyRegistrationSerializer(CamelInputModelSerializer):
-    # Accept camelCase keys via CamelInputModelSerializer
+class FacultyRegistrationSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
-    # Accept either JSON list or string; views also try to normalize
-    work_preference = serializers.CharField(required=False, allow_blank=True)
-    resume = serializers.FileField(required=False, allow_null=True)
-    transcripts = serializers.FileField(required=False, allow_null=True)
+    work_preference = serializers.CharField()
+    resume = serializers.FileField(required=True)
+    transcripts = serializers.FileField(required=True)
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -109,33 +107,13 @@ class FacultyRegistrationSerializer(CamelInputModelSerializer):
             "transcripts",
         ]
 
-    def _coerce_work_pref(self, val):
-        # val may be list, JSON string, or comma-separated string
-        if val is None:
-            return []
-        if isinstance(val, list):
-            return val
-        if isinstance(val, str):
-            # try parse JSON first
-            try:
-                parsed = json.loads(val)
-                if isinstance(parsed, list):
-                    return parsed
-            except Exception:
-                pass
-            # fallback split by comma
-            return [x.strip() for x in val.split(",") if x.strip()]
-        return []
-
     def create(self, validated_data):
-        # Extract profile fields
         profile_data = {
             "first_name": validated_data.pop("first_name"),
             "last_name": validated_data.pop("last_name"),
-            # handle work_preference coercion
-            "work_preference": self._coerce_work_pref(validated_data.pop("work_preference", "")),
-            "resume": validated_data.pop("resume", None),
-            "transcripts": validated_data.pop("transcripts", None),
+            "work_preference": validated_data.pop("work_preference"),
+            "resume": validated_data.pop("resume"),
+            "transcripts": validated_data.pop("transcripts"),
         }
 
         user = CustomUser.objects.create_user(
@@ -146,6 +124,7 @@ class FacultyRegistrationSerializer(CamelInputModelSerializer):
 
         FacultyProfile.objects.create(user=user, **profile_data)
         return user
+
 
 
 class RecruiterRegistrationSerializer(CamelInputModelSerializer):

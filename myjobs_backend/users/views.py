@@ -71,8 +71,9 @@ class FacultyRegistrationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        data = _normalize_work_pref_in_request_data(request.data)
-        serializer = FacultyRegistrationSerializer(data=data)
+        # data = _normalize_work_pref_in_request_data(request.data)
+        # serializer = FacultyRegistrationSerializer(data=data)
+        serializer = FacultyRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             try:
                 user = serializer.save()
