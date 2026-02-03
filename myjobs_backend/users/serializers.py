@@ -176,10 +176,7 @@ class FacultyProfileSerializer(CamelInputModelSerializer):
     resume = serializers.FileField(required=False, allow_null=True)
     transcripts = serializers.FileField(required=False, allow_null=True)
     profile_photo = serializers.FileField(required=False, allow_null=True)
-    # JSONField works for list storage; incoming camelCase handled by CamelInputModelSerializer
-    work_preference = serializers.ListField(
-        child=serializers.CharField(), required=False
-    )
+    work_preference = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = FacultyProfile
@@ -203,19 +200,13 @@ class FacultyProfileSerializer(CamelInputModelSerializer):
         read_only_fields = ("id", "user")
 
     def _coerce_work_pref(self, val):
-        if val is None:
-            return []
-        if isinstance(val, list):
-            return val
+        if val is None or val == "":
+            return ""
         if isinstance(val, str):
-            try:
-                parsed = json.loads(val)
-                if isinstance(parsed, list):
-                    return parsed
-            except Exception:
-                pass
-            return [x.strip() for x in val.split(",") if x.strip()]
-        return []
+            return val
+        if isinstance(val, list):
+            return ", ".join(val) if val else ""
+        return str(val)
 
     def update(self, instance, validated_data):
         # handle file fields & work_preference safely

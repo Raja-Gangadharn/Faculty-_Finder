@@ -32,9 +32,9 @@ urlpatterns = [
     path('recruiter/faculty/<int:user_id>/details/', RecruiterFacultyDetailView.as_view(), name='recruiter-faculty-detail'),
 
     # lookups
-    path('api/colleges/', CollegeListView.as_view(), name='colleges-list'),
-    path('api/degrees/', DegreeListView.as_view(), name='degrees-list'),
-    path('api/departments/', DepartmentListView.as_view(), name='departments-list'),
+    path('colleges/', CollegeListView.as_view(), name='colleges-list'),
+    path('degrees/', DegreeListView.as_view(), name='degrees-list'),
+    path('departments/', DepartmentListView.as_view(), name='departments-list'),
 ]
 
 # --- duplicate/alias endpoints for frontend convenience ---

@@ -38,22 +38,46 @@ const EducationalInfo = forwardRef(({ isEditing }, ref) => {
   // Fetch dropdown options
   const fetchDropdownOptions = async () => {
     try {
-      const [degreesRes, collegesRes, departmentsRes] = await Promise.all([
+      const [degreesRes, collegesRes, departmentsRes] = await Promise.allSettled([
         facultyService.getDegrees(),
         facultyService.getColleges(),
         facultyService.getDepartments()
       ]);
 
+      // Handle degrees response
+      let degrees = [];
+      if (degreesRes.status === 'fulfilled') {
+        degrees = degreesRes.value.data.results ?
+          degreesRes.value.data.results.map(d => d.name) :
+          degreesRes.value.data.map(d => d.name);
+      } else {
+        console.warn("Degrees API not ready:", degreesRes.reason);
+      }
+
+      // Handle colleges response
+      let colleges = [];
+      if (collegesRes.status === 'fulfilled') {
+        colleges = collegesRes.value.data.results ?
+          collegesRes.value.data.results.map(c => c.name) :
+          collegesRes.value.data.map(c => c.name);
+      } else {
+        console.warn("Colleges API not ready:", collegesRes.reason);
+      }
+
+      // Handle departments response
+      let departments = [];
+      if (departmentsRes.status === 'fulfilled') {
+        departments = departmentsRes.value.data.results ?
+          departmentsRes.value.data.results.map(d => d.name) :
+          departmentsRes.value.data.map(d => d.name);
+      } else {
+        console.warn("Departments API not ready:", departmentsRes.reason);
+      }
+
       setDropdownOptions({
-        degrees: degreesRes.data.results ?
-          degreesRes.data.results.map(d => d.name) :
-          degreesRes.data.map(d => d.name),
-        colleges: collegesRes.data.results ?
-          collegesRes.data.results.map(c => c.name) :
-          collegesRes.data.map(c => c.name),
-        departments: departmentsRes.data.results ?
-          departmentsRes.data.results.map(d => d.name) :
-          departmentsRes.data.map(d => d.name)
+        degrees,
+        colleges,
+        departments
       });
     } catch (error) {
       console.error('Error fetching dropdown options:', error);

@@ -186,7 +186,7 @@ class FacultyProfileDetail(generics.RetrieveUpdateAPIView):
     def get_object(self):
         profile, _ = FacultyProfile.objects.get_or_create(
             user=self.request.user,
-            defaults={'first_name': '', 'last_name': '', 'work_preference': []}
+            defaults={'first_name': '', 'last_name': '', 'work_preference': ''}
         )
         self.check_object_permissions(self.request, profile)
         return profile
@@ -268,7 +268,8 @@ class TranscriptListCreateView(generics.ListCreateAPIView):
                 user=self.request.user,
                 defaults={
                     'first_name': '',
-                    'last_name': ''
+                    'last_name': '',
+                    'work_preference': ''
                 }
             )
             if created:
@@ -372,7 +373,12 @@ class MembershipListCreateView(generics.ListCreateAPIView):
                 print(f"[DEBUG] Found profile: {profile.id}")
             except FacultyProfile.DoesNotExist:
                 print("[DEBUG] Profile does not exist, creating...")
-                profile = FacultyProfile.objects.create(user=self.request.user)
+                profile = FacultyProfile.objects.create(
+                    user=self.request.user,
+                    first_name='',
+                    last_name='',
+                    work_preference=''
+                )
                 print(f"[DEBUG] Created new profile: {profile.id}")
             
             # Get memberships

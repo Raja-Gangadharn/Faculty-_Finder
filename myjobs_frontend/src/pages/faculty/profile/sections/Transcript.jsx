@@ -51,8 +51,8 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
         const response = await facultyService.getDepartments();
         setDepartments(response.data);
       } catch (error) {
-        console.error('Error fetching departments:', error);
-        toast.error('Failed to load departments');
+        console.warn("Departments API not ready:", error);
+        // Don't show toast error for missing APIs
       } finally {
         setLoadingDepartments(false);
       }
@@ -304,9 +304,8 @@ const Transcript = forwardRef(({ isEditing }, ref) => {
       setTranscripts(processedData);
       return processedData;
     } catch (err) {
-      console.error('Failed to fetch transcripts', err);
-      const errorMsg = err.response?.data?.message || 'Failed to load transcripts. Please try again.';
-      setError(errorMsg);
+      console.warn("Transcripts API not ready:", err);
+      // Don't show error toast for missing APIs, just set empty state
       setTranscripts([]);
       return [];
     } finally {
