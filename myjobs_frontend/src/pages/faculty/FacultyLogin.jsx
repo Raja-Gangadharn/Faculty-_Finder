@@ -36,10 +36,10 @@ const FacultyLogin = () => {
   return (
     <div className="faculty-login-container">
       <div className="faculty-login-content position-relative">
-        <button 
-          onClick={() => navigate('/')} 
-          className="btn btn-close position-absolute" 
-          style={{top: '1rem', right: '1rem', zIndex: 10, fontSize: '1.25rem'}}
+        <button
+          onClick={() => navigate('/')}
+          className="btn btn-close position-absolute"
+          style={{ top: '1rem', right: '1rem', zIndex: 10, fontSize: '1.25rem' }}
           aria-label="Close"
         >
           <FaTimes />
@@ -47,16 +47,16 @@ const FacultyLogin = () => {
         {/* Left Panel with Image */}
         <div className="faculty-login-left-panel">
           <div className="login-image-container">
-            <img 
-              src={loginImage} 
-              alt="Faculty member teaching" 
+            <img
+              src={loginImage}
+              alt="Faculty member teaching"
               className="login-image"
             />
           </div>
           <div className="login-left-content">
             <h2>Welcome Back!</h2>
             <p>Sign in to access your faculty account and explore academic opportunities.</p>
-            
+
             <div className="features-list">
               <div className="feature-item">
                 <span className="feature-icon"><FaUserGraduate /></span>
@@ -79,9 +79,9 @@ const FacultyLogin = () => {
           <div className="login-form-container">
             <h2 className="text-center mb-4">Faculty Login</h2>
             <p className="text-center text-muted mb-4">Enter your credentials to access your account</p>
-            
+
             {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
-            
+
             <Form onSubmit={handleSubmit} className="faculty-login-form">
               <Form.Group className="mb-4">
                 <div className="input-group">
@@ -116,9 +116,9 @@ const FacultyLogin = () => {
                 </div>
               </Form.Group>
 
-              <Button 
-                type="submit" 
-                variant="primary" 
+              <Button
+                type="submit"
+                variant="primary"
                 className="w-100 btn-lg fac-login-button"
                 disabled={loading}
               >
