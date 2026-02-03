@@ -134,8 +134,8 @@ const EducationalInfo = forwardRef(({ isEditing }, ref) => {
       setEducation(processedData);
       return processedData;
     } catch (err) {
-      console.error('Error fetching education data:', err);
-      setError('Failed to load education data. Please try again later.');
+      console.warn("Education API not ready:", err);
+      // Don't show error toast for missing APIs, just set empty state
       setEducation([]);
       return [];
     } finally {
@@ -169,25 +169,49 @@ const EducationalInfo = forwardRef(({ isEditing }, ref) => {
       });
 
       if (editingId) {
-        await facultyService.updateEducation(editingId, data);
-        toast.success('Education updated successfully', {
-          position: 'top-right',
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true
-        });
+        try {
+          await facultyService.updateEducation(editingId, data);
+          toast.success('Education updated successfully', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+          });
+        } catch (error) {
+          console.warn("Education update API not ready:", error);
+          toast.error('Failed to update education. Please try again.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+          });
+        }
       } else {
-        await facultyService.createEducation(data);
-        toast.success('Education added successfully', {
-          position: 'top-right',
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true
-        });
+        try {
+          await facultyService.createEducation(data);
+          toast.success('Education added successfully', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+          });
+        } catch (error) {
+          console.warn("Education creation API not ready:", error);
+          toast.error('Failed to add education. Please try again.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+          });
+        }
       }
 
       await fetchEducation();
