@@ -127,6 +127,7 @@ class FacultyRegistrationSerializer(serializers.ModelSerializer):
 
 
 
+
 class RecruiterRegistrationSerializer(CamelInputModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()

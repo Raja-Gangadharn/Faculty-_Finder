@@ -36,8 +36,7 @@ class FacultyProfile(models.Model):
     state = models.CharField(max_length=100, blank=True)
     city = models.CharField(max_length=100, blank=True)
     linkedin = models.CharField(max_length=255, blank=True)
-    # Work preference: frontend allows multiple selected options -> store as JSON
-    work_preference = models.CharField(max_length=50)
+    work_preference = models.CharField(max_length=50, blank=True)
     profile_photo = models.FileField(upload_to='profile_photos/', null=True, blank=True)
 
     # previously existing fields

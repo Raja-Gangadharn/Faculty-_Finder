@@ -125,26 +125,43 @@ export const loginUser = async (email, password) => {
   }
 };
 
-export const registerFaculty = async (formData) => {
-  try {
-    const data = new FormData();
-    data.append("first_name", formData.firstName);
-    data.append("last_name", formData.lastName);
-    data.append("email", formData.email);
-    data.append("password", formData.password);
-    data.append("work_preference", formData.workPreference);
-    if (formData.resume) data.append("resume", formData.resume);
-    if (formData.transcripts) data.append("transcripts", formData.transcripts);
-    data.append("is_faculty", true);
+// export const registerFaculty = async (formData) => {
+//   try {
+//     const data = new FormData();
+//     data.append("first_name", formData.firstName);
+//     data.append("last_name", formData.lastName);
+//     data.append("email", formData.email);
+//     data.append("password", formData.password);
+//     data.append("work_preference", formData.workPreference);
+//     if (formData.resume) data.append("resume", formData.resume);
+//     if (formData.transcripts) data.append("transcripts", formData.transcripts);
+//     data.append("is_faculty", true);
 
-    const response = await api.post("faculty/register/", data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { detail: "Faculty registration failed" };
-  }
+//     const response = await api.post("faculty/register/", data, {
+//       headers: { "Content-Type": "multipart/form-data" },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     throw error.response?.data || { detail: "Faculty registration failed" };
+//   }
+// };
+export const registerFaculty = async (formData) => {
+  const data = new FormData();
+  data.append("first_name", formData.firstName);
+  data.append("last_name", formData.lastName);
+  data.append("email", formData.email);
+  data.append("password", formData.password);
+  data.append("work_preference", formData.workPreference); // 그대로
+  data.append("resume", formData.resume);
+  data.append("transcripts", formData.transcripts);
+
+  const response = await api.post("faculty/register/", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return response.data;
 };
+
 
 export const registerRecruiter = async (formData) => {
   try {
