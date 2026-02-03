@@ -167,7 +167,10 @@ export const registerFaculty = async (formData) => {
     return response.data;
   } catch (error) {
     console.error("Faculty registration error:", error.response?.data);
-    throw error.response?.data || { detail: "Faculty registration failed" };
+    if (error.response?.data) {
+    throw error.response.data;
+  }
+    throw { detail: "Faculty registration failed" };
   }
 };
 

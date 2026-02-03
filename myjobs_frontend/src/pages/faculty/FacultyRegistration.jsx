@@ -93,15 +93,15 @@ const FacultyRegistration = () => {
         navigate('/faculty/login');
       }, 2000);
     } catch (err) {
-  console.error("Faculty registration error:", err.response?.data);
-
-  if (err.response?.data) {
-    const firstError = Object.values(err.response.data)[0];
-    setError(Array.isArray(firstError) ? firstError[0] : firstError);
+  if (err.email) {
+    setError("This email is already registered. Please login.");
+  } else if (err.detail) {
+    setError(err.detail);
   } else {
     setError("Registration failed. Please try again.");
   }
 }
+
  finally {
       setIsSubmitting(false);
     }
