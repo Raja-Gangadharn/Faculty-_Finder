@@ -12,3 +12,4 @@ tzdata==2025.2
 pytz==2024.1
 dj-database-url==2.2.0
 gunicorn==21.2.0
+whitenoise
