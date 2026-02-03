@@ -142,7 +142,6 @@ class Membership(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     is_current = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         ordering = ['-start_date']
