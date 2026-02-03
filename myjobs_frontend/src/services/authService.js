@@ -132,7 +132,7 @@ export const registerFaculty = async (formData) => {
     data.append("last_name", formData.lastName);
     data.append("email", formData.email);
     data.append("password", formData.password);
-    data.append("work_preference", formData.workPreference);
+    data.append("work_preference",JSON.stringify([formData.workPreference.replace("-", "_")]));
     if (formData.resume) data.append("resume", formData.resume);
     if (formData.transcripts) data.append("transcripts", formData.transcripts);
     data.append("is_faculty", true);
