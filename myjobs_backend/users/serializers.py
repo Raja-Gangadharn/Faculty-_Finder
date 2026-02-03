@@ -92,9 +92,7 @@ class FacultyRegistrationSerializer(CamelInputModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     # Accept either JSON list or string; views also try to normalize
-    work_preference = serializers.ListField(
-        child=serializers.CharField(), required=False
-    )
+    work_preference = serializers.JSONField(required=False)
     resume = serializers.FileField(required=False, allow_null=True)
     transcripts = serializers.FileField(required=False, allow_null=True)
     password = serializers.CharField(write_only=True)
