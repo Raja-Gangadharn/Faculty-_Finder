@@ -222,8 +222,8 @@ const FacultyRegistration = () => {
                     required
                   >
                     <option value="">Select Work Preference</option>
-                    <option value="full-time">Full-time</option>
-                    <option value="part-time">Part-time</option>
+                    <option value="full_time">Full-time</option>
+                    <option value="part_time">Part-time</option>
                     <option value="adjunct">Adjunct</option>
                     <option value="visiting">Visiting Professor</option>
                   </Form.Select>

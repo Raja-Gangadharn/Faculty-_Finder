@@ -92,7 +92,7 @@ class FacultyRegistrationSerializer(CamelInputModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     # Accept either JSON list or string; views also try to normalize
-    work_preference = serializers.JSONField(required=False)
+    work_preference = serializers.CharField(required=False, allow_blank=True)
     resume = serializers.FileField(required=False, allow_null=True)
     transcripts = serializers.FileField(required=False, allow_null=True)
     password = serializers.CharField(write_only=True)
@@ -133,9 +133,7 @@ class FacultyRegistrationSerializer(CamelInputModelSerializer):
             "first_name": validated_data.pop("first_name"),
             "last_name": validated_data.pop("last_name"),
             # handle work_preference coercion
-            "work_preference": self._coerce_work_pref(
-                validated_data.pop("work_preference", [])
-            ),
+            "work_preference": self._coerce_work_pref(validated_data.pop("work_preference", "")),
             "resume": validated_data.pop("resume", None),
             "transcripts": validated_data.pop("transcripts", None),
         }
