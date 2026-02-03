@@ -97,8 +97,14 @@ MIDDLEWARE = [
 
 # CORS Settings
 # CORS settings
+
+CORS_ALLOWED_ORIGINS = [
+    "https://faculty-finder-six.vercel.app",
+]
+
 CORS_ALLOW_ALL_ORIGINS = True  # For development only
 CORS_ALLOW_CREDENTIALS = True
+
 
 # Media files (resumes, etc.)
 MEDIA_URL = '/media/'
@@ -106,7 +112,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Authentication settings
 AUTH_USER_MODEL = 'users.CustomUser'
-CORS_ALLOW_CREDENTIALS = True
+
 
 # For production, specify exact origins:
 # CORS_ALLOWED_ORIGINS = [
