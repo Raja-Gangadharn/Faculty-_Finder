@@ -12,6 +12,7 @@ from .views import (
     PresentationListCreateView, PresentationDetailView,
     DocumentListCreateView, DocumentDetailView,
     FacultySearchView, RecruiterFacultyDetailView,
+    MarkedProfileListCreateView, unmark_profile, is_profile_marked
 )
 from .views_dropdowns import DegreeListView, CollegeListView, DepartmentListView
 
@@ -30,6 +31,11 @@ urlpatterns = [
 
     # recruiter faculty full detail by user id
     path('recruiter/faculty/<int:user_id>/details/', RecruiterFacultyDetailView.as_view(), name='recruiter-faculty-detail'),
+
+    # marked profiles endpoints
+    path('recruiter/marked-profiles/', MarkedProfileListCreateView.as_view(), name='marked-profiles'),
+    path('recruiter/marked-profiles/<int:faculty_id>/', unmark_profile, name='unmark-profile'),
+    path('recruiter/faculty/<int:faculty_id>/is-marked/', is_profile_marked, name='is-profile-marked'),
 
     # lookups
     path('colleges/', CollegeListView.as_view(), name='colleges-list'),

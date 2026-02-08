@@ -5,11 +5,11 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
 
-from .models import Job, JobApplication, JobStatusHistory
+from .models import Job, JobApplication, JobStatusHistory, SavedJob
 from .serializers import (
     JobSerializer, JobCreateSerializer, JobUpdateSerializer, 
     JobStatusUpdateSerializer, JobApplicationSerializer, 
-    JobStatusHistorySerializer
+    JobStatusHistorySerializer, SavedJobSerializer
 )
 
 class IsRecruiterOrReadOnly(permissions.BasePermission):
@@ -40,11 +40,36 @@ class JobListCreateView(generics.ListCreateAPIView):
     serializer_class = JobSerializer
     permission_classes = [IsRecruiterOrReadOnly]
     
+    def get_faculty_departments(self, faculty_user):
+        """
+        Get all departments associated with a faculty user from their transcripts and courses
+        """
+        try:
+            faculty_profile = faculty_user.facultyprofile
+            departments = set()
+            
+            # Get departments from transcripts
+            transcript_depts = faculty_profile.transcripts_list.filter(
+                department__isnull=False
+            ).values_list('department__name', flat=True)
+            departments.update(transcript_depts)
+            
+            # Get departments from courses
+            course_depts = faculty_profile.transcripts_list.filter(
+                courses__department__isnull=False
+            ).values_list('courses__department__name', flat=True)
+            departments.update(course_depts)
+            
+            return list(departments)
+        except:
+            return []
+
     def get_queryset(self):
         """
         Filter jobs based on user type:
         - Recruiters: see only their own jobs
-        - Faculty: see all active jobs
+        - Faculty: see only jobs matching their departments from transcripts/courses
+        - Others: see all active jobs
         """
         user = self.request.user
         if not user.is_authenticated:
@@ -54,9 +79,18 @@ class JobListCreateView(generics.ListCreateAPIView):
             # Recruiters see only their own jobs
             return Job.objects.filter(posted_by=user)
         elif user.is_faculty:
-            # Faculty see all open jobs
+            # Faculty see only jobs matching their departments
+            faculty_departments = self.get_faculty_departments(user)
+            
+            if not faculty_departments:
+                # If no departments found, return empty queryset
+                return Job.objects.none()
+            
+            # Filter by department and active status
             return Job.objects.filter(
-                Q(status='open') & Q(deadline__gte=timezone.now().date())
+                Q(department__in=faculty_departments) &
+                Q(status='open') & 
+                Q(deadline__gte=timezone.now().date())
             )
         else:
             # Default: show all active jobs
@@ -216,3 +250,52 @@ class JobApplicationListCreateView(generics.ListCreateAPIView):
             applicant=self.request.user,
             job=job
         )
+
+# Saved Jobs endpoints
+class SavedJobListCreateView(generics.ListCreateAPIView):
+    """
+    GET: List all saved jobs for the current faculty
+    POST: Save a job
+    """
+    serializer_class = SavedJobSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Only return saved jobs for the current user"""
+        return SavedJob.objects.filter(faculty=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Set the faculty to the current user"""
+        serializer.save(faculty=self.request.user)
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def unsave_job(request, job_id):
+    """
+    Remove a job from saved jobs
+    """
+    try:
+        saved_job = SavedJob.objects.get(
+            faculty=request.user,
+            job_id=job_id
+        )
+        saved_job.delete()
+        return Response({'message': 'Job removed from saved jobs'}, status=status.HTTP_200_OK)
+    except SavedJob.DoesNotExist:
+        return Response(
+            {'error': 'Job not found in saved jobs'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def is_job_saved(request, job_id):
+    """
+    Check if a job is saved by the current user
+    """
+    is_saved = SavedJob.objects.filter(
+        faculty=request.user,
+        job_id=job_id
+    ).exists()
+    
+    return Response({'is_saved': is_saved})

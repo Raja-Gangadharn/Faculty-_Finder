@@ -3,21 +3,9 @@ import re
 import json
 from rest_framework import serializers
 from .models import (
-    CustomUser,
-    FacultyProfile,
-    RecruiterProfile,
-    College,
-    Degree,
-    Department,
-    Education,
-    Transcript,
-    Course,
-    Certificate,
-    Membership,
-    Experience,
-    Skill,
-    Presentation,
-    Document,
+    CustomUser, FacultyProfile, RecruiterProfile, Department, 
+    College, Degree, Transcript, Course, Document, MarkedProfile,
+    Education, Certificate, Membership, Experience, Skill, Presentation
 )
 
 
@@ -173,10 +161,16 @@ class UserBasicSerializer(serializers.ModelSerializer):
 
 class FacultyProfileSerializer(CamelInputModelSerializer):
     user = UserBasicSerializer(read_only=True)
+
     resume = serializers.FileField(required=False, allow_null=True)
     transcripts = serializers.FileField(required=False, allow_null=True)
     profile_photo = serializers.FileField(required=False, allow_null=True)
-    work_preference = serializers.CharField(required=False, allow_blank=True)
+
+    # ✅ ArrayField must be ListField
+    work_preference = serializers.ListField(
+        child=serializers.CharField(),
+        required=False
+    )
 
     class Meta:
         model = FacultyProfile
@@ -198,29 +192,6 @@ class FacultyProfileSerializer(CamelInputModelSerializer):
             "transcripts",
         )
         read_only_fields = ("id", "user")
-
-    def _coerce_work_pref(self, val):
-        if val is None or val == "":
-            return ""
-        if isinstance(val, str):
-            return val
-        if isinstance(val, list):
-            return ", ".join(val) if val else ""
-        return str(val)
-
-    def update(self, instance, validated_data):
-        # handle file fields & work_preference safely
-        wp = validated_data.pop("work_preference", None)
-        if wp is not None:
-            wp = self._coerce_work_pref(wp)
-            instance.work_preference = wp
-
-        # for other fields (including file fields), set directly
-        for attr, val in validated_data.items():
-            setattr(instance, attr, val)
-        instance.save()
-        return instance
-
 
 class RecruiterProfileSerializer(serializers.ModelSerializer):
     user = UserBasicSerializer(read_only=True)
@@ -415,6 +386,12 @@ class TranscriptSerializer(CamelInputModelSerializer):
             }
             data["degree_level"] = mapping.get(val, val)
 
+        # Handle frontend 'institution' field mapping to 'college'
+        if isinstance(data, dict) and "institution" in data:
+            data = data.copy()
+            if "college" not in data:
+                data["college"] = data.pop("institution")
+
         # Handle department if it's sent as a dictionary with id
         if (
             isinstance(data, dict)
@@ -575,3 +552,64 @@ class DocumentSerializer(CamelInputModelSerializer):
         model = Document
         read_only_fields = ("id", "uploaded_at")
         fields = ("id", "name", "doc_type", "file", "uploaded_at", "size")
+
+
+class MarkedProfileSerializer(serializers.ModelSerializer):
+    """Serializer for Marked Profile model"""
+    faculty_details = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MarkedProfile
+        fields = ['id', 'recruiter', 'faculty', 'marked_at', 'notes', 'faculty_details']
+        read_only_fields = ['recruiter', 'marked_at']
+    
+    def get_faculty_details(self, obj):
+        """Get detailed faculty information"""
+        faculty = obj.faculty
+        try:
+            faculty_profile = faculty.facultyprofile
+            return {
+                'id': faculty.id,
+                'email': faculty.email,
+                'first_name': faculty_profile.first_name,
+                'last_name': faculty_profile.last_name,
+                'title': faculty_profile.title,
+                'phone': faculty_profile.phone,
+                'state': faculty_profile.state,
+                'city': faculty_profile.city,
+                'work_preference': faculty_profile.work_preference,
+                'profile_photo': faculty_profile.profile_photo.url if faculty_profile.profile_photo else None,
+                'departments': self._get_faculty_departments(faculty_profile)
+            }
+        except:
+            return {
+                'id': faculty.id,
+                'email': faculty.email,
+                'first_name': '',
+                'last_name': '',
+                'title': '',
+                'phone': '',
+                'state': '',
+                'city': '',
+                'work_preference': [],
+                'profile_photo': None,
+                'departments': []
+            }
+    
+    def _get_faculty_departments(self, faculty_profile):
+        """Get all departments associated with a faculty user"""
+        departments = set()
+        
+        # Get departments from transcripts
+        transcript_depts = faculty_profile.transcripts_list.filter(
+            department__isnull=False
+        ).values_list('department__name', flat=True)
+        departments.update(transcript_depts)
+        
+        # Get departments from courses
+        course_depts = faculty_profile.transcripts_list.filter(
+            courses__department__isnull=False
+        ).values_list('courses__department__name', flat=True)
+        departments.update(course_depts)
+        
+        return list(departments)

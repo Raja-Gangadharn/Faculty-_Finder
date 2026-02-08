@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Job, JobApplication, JobStatusHistory
+from .models import Job, JobApplication, JobStatusHistory, SavedJob
 
 User = get_user_model()
 
@@ -133,3 +133,33 @@ class JobStatusHistorySerializer(serializers.ModelSerializer):
                 return f"{profile.first_name} {profile.last_name}".strip()
         except:
             return obj.changed_by.email
+
+class SavedJobSerializer(serializers.ModelSerializer):
+    """Serializer for Saved Job model"""
+    job_details = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SavedJob
+        fields = ['id', 'faculty', 'job', 'saved_at', 'job_details']
+        read_only_fields = ['faculty', 'saved_at']
+    
+    def get_job_details(self, obj):
+        """Get detailed job information"""
+        job = obj.job
+        return {
+            'id': job.id,
+            'title': job.title,
+            'department': job.department,
+            'location': job.location,
+            'job_type': job.job_type,
+            'description': job.description,
+            'course': job.course,
+            'eligibility': job.eligibility,
+            'skills_required': job.skills_required,
+            'deadline': job.deadline,
+            'status': job.status,
+            'created_at': job.created_at,
+            'posted_by_name': job.posted_by_name if hasattr(job, 'posted_by_name') else None,
+            'is_active': job.is_active,
+            'days_until_deadline': job.days_until_deadline
+        }

@@ -27,6 +27,8 @@ SECRET_KEY = 'django-insecure-e-ksa$no9s(9%45a!6ors5+xwzqx!p4zn3iek(j3fo)9tq=ohq
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
+# DEBUG = True
+
 # Allow all hosts for development
 ALLOWED_HOSTS = os.getenv(
     "ALLOWED_HOSTS",
@@ -156,23 +158,26 @@ WSGI_APPLICATION = 'myjobs_backend.wsgi.application'
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    # SERVER (PostgreSQL)
+    # ✅ Render / Production
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
     }
 else:
-    # LOCAL (MySQL)
+    # ✅ Local development
     DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'jobportal_db'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', '1181'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "faculty_finder_db",
+            "USER": "postgres",
+            "PASSWORD": "postgres123",
+            "HOST": "localhost",
+            "PORT": "5432",
+        }
     }
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

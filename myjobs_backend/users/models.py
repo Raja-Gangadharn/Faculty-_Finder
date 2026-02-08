@@ -4,6 +4,8 @@ from django.db import models
 from .managers import CustomUserManager
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+
 
 # -------------------------
 # User & Profile models
@@ -36,7 +38,11 @@ class FacultyProfile(models.Model):
     state = models.CharField(max_length=100, blank=True)
     city = models.CharField(max_length=100, blank=True)
     linkedin = models.CharField(max_length=255, blank=True)
-    work_preference = models.CharField(max_length=50, blank=True)
+    work_preference = ArrayField(
+        models.CharField(max_length=100),
+        blank=True,
+        default=list
+    )
     profile_photo = models.FileField(upload_to='profile_photos/', null=True, blank=True)
 
     # previously existing fields
@@ -117,7 +123,7 @@ class Course(models.Model):
     credits = models.FloatField(null=True, blank=True)
     grade = models.CharField(max_length=50, blank=True)
     department = models.ForeignKey(Department, null=True, blank=True, on_delete=models.SET_NULL, related_name='courses')
-    created_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"{self.code} - {self.name}"
@@ -142,9 +148,10 @@ class Membership(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     is_current = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        ordering = ['-start_date']
+        ordering = ['-created_at', '-start_date']
     
     def __str__(self): 
         return self.organization
@@ -183,3 +190,17 @@ class Document(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     size = models.FloatField(null=True, blank=True)  # MB if desired
     def __str__(self): return self.name
+
+class MarkedProfile(models.Model):
+    """Model for recruiters to mark faculty profiles they're interested in"""
+    recruiter = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='marked_faculty')
+    faculty = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='marked_by_recruiters')
+    marked_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        unique_together = ['recruiter', 'faculty']  # A recruiter can only mark a faculty once
+        ordering = ['-marked_at']
+    
+    def __str__(self):
+        return f"{self.recruiter.email} marked {self.faculty.email}"

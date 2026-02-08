@@ -109,3 +109,16 @@ class JobStatusHistory(models.Model):
     
     def __str__(self):
         return f"{self.job.title} - {self.old_status} → {self.new_status}"
+
+class SavedJob(models.Model):
+    """Model for faculty to save jobs they're interested in"""
+    faculty = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_jobs')
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='saved_by')
+    saved_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['faculty', 'job']  # A faculty can only save a job once
+        ordering = ['-saved_at']
+    
+    def __str__(self):
+        return f"{self.faculty.email} saved {self.job.title}"

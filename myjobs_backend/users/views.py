@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status, generics, permissions
+from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
@@ -15,14 +16,15 @@ from .serializers import (
     EducationSerializer, TranscriptSerializer, CourseSerializer,
     CertificateSerializer, MembershipSerializer, ExperienceSerializer,
     SkillSerializer, PresentationSerializer, DocumentSerializer,
-    CollegeSerializer, DegreeSerializer, DepartmentSerializer
+    CollegeSerializer, DegreeSerializer, DepartmentSerializer,
+    MarkedProfileSerializer
 )
 from .models import (
     FacultyProfile, RecruiterProfile,
     Education, Transcript, Course,
     Certificate, Membership, Experience,
     Skill, Presentation, Document,
-    College, Degree, Department
+    College, Degree, Department, MarkedProfile
 )
 from .permissions import IsOwnerOrReadOnly, IsApplicant, IsRecruiter
 
@@ -31,39 +33,6 @@ User = get_user_model()
 # -----------------------
 # Helpers
 # -----------------------
-def _normalize_work_pref_in_request_data(data):
-    """
-    Accept both list or JSON string or comma-separated string in incoming request data for 'work_preference'.
-    Returns a copy of data (not mutating original) with 'work_preference' normalized to a python list if present.
-    """
-    if hasattr(data, 'copy'):
-        d = data.copy()
-    else:
-        d = dict(data)
-    for key in ('work_preference', 'workPreference'):
-        if key in d:
-            val = d.get(key)
-            if val is None:
-                d['work_preference'] = []
-                break
-            if isinstance(val, list):
-                d['work_preference'] = val
-                break
-            if isinstance(val, str):
-                try:
-                    parsed = json.loads(val)
-                    if isinstance(parsed, list):
-                        d['work_preference'] = parsed
-                        break
-                except Exception:
-                    # fallback: comma separated
-                    d['work_preference'] = [x.strip() for x in val.split(',') if x.strip()]
-                    break
-            # otherwise keep as-is
-            d['work_preference'] = val
-            break
-    return d
-
 # -----------------------
 # Existing registration & login views
 # -----------------------
@@ -186,19 +155,38 @@ class FacultyProfileDetail(generics.RetrieveUpdateAPIView):
     def get_object(self):
         profile, _ = FacultyProfile.objects.get_or_create(
             user=self.request.user,
-            defaults={'first_name': '', 'last_name': '', 'work_preference': ''}
+            defaults={'first_name': '', 'last_name': '', 'work_preference': []}
         )
         self.check_object_permissions(self.request, profile)
         return profile
 
     def update(self, request, *args, **kwargs):
-        # normalize work_preference from multipart/form-data if it's a JSON string
-        data = _normalize_work_pref_in_request_data(request.data)
-        # use serializer with partial=True so frontend can update only some fields
-        serializer = self.get_serializer(self.get_object(), data=data, partial=True)
+        data = request.data.copy()
+
+    # 🔒 remove read-only / invalid fields
+        data.pop('email', None)
+        data.pop('user', None)
+        data.pop('id', None)
+
+    # ✅ Only convert empty strings to None for fields that allow null
+    # dob is the only field that allows null
+        if "dob" in data and data["dob"] == "":
+            data["dob"] = None
+            
+    # Handle work_preference - if it's None, make it empty list
+        if "work_preference" in data and data["work_preference"] is None:
+            data["work_preference"] = []
+
+        serializer = self.get_serializer(
+            self.get_object(),
+            data=data,
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+
 
 class RecruiterProfileDetail(generics.RetrieveUpdateAPIView):
     serializer_class = RecruiterProfileSerializer
@@ -266,11 +254,8 @@ class TranscriptListCreateView(generics.ListCreateAPIView):
             # Create a profile if missing; CustomUser does not have first_name/last_name fields
             profile, created = FacultyProfile.objects.get_or_create(
                 user=self.request.user,
-                defaults={
-                    'first_name': '',
-                    'last_name': '',
-                    'work_preference': ''
-                }
+                defaults={'first_name': '', 'last_name': '', 'work_preference': []}
+
             )
             if created:
                 print(f"[DEBUG] Created new FacultyProfile for user {self.request.user.id}")
@@ -377,7 +362,7 @@ class MembershipListCreateView(generics.ListCreateAPIView):
                     user=self.request.user,
                     first_name='',
                     last_name='',
-                    work_preference=''
+                    work_preference=[]
                 )
                 print(f"[DEBUG] Created new profile: {profile.id}")
             
@@ -502,10 +487,16 @@ class FacultySearchView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsRecruiter]
 
     def get(self, request):
+        # Get faculty IDs that are already marked by this recruiter
+        marked_faculty_ids = MarkedProfile.objects.filter(
+            recruiter=request.user
+        ).values_list('faculty_id', flat=True)
+        
         profiles = (
             FacultyProfile.objects.filter(transcripts_list__isnull=False)
             .select_related("user")
             .prefetch_related("transcripts_list__department", "transcripts_list__courses")
+            .exclude(user_id__in=marked_faculty_ids)  # Exclude already marked faculty
             .distinct()
         )
 
@@ -696,3 +687,55 @@ class RecruiterFacultyDetailView(APIView):
         }
 
         return Response(payload, status=status.HTTP_200_OK)
+
+
+# -----------------------
+# Marked Profiles views
+# -----------------------
+class MarkedProfileListCreateView(generics.ListCreateAPIView):
+    """
+    GET: List all marked profiles for the current recruiter
+    POST: Mark a faculty profile
+    """
+    serializer_class = MarkedProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Only return marked profiles for the current recruiter"""
+        return MarkedProfile.objects.filter(recruiter=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Set the recruiter to the current user"""
+        serializer.save(recruiter=self.request.user)
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def unmark_profile(request, faculty_id):
+    """
+    Remove a faculty profile from marked profiles
+    """
+    try:
+        marked_profile = MarkedProfile.objects.get(
+            recruiter=request.user,
+            faculty_id=faculty_id
+        )
+        marked_profile.delete()
+        return Response({'message': 'Profile removed from marked list'}, status=status.HTTP_200_OK)
+    except MarkedProfile.DoesNotExist:
+        return Response(
+            {'error': 'Profile not found in marked list'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def is_profile_marked(request, faculty_id):
+    """
+    Check if a faculty profile is marked by the current recruiter
+    """
+    is_marked = MarkedProfile.objects.filter(
+        recruiter=request.user,
+        faculty_id=faculty_id
+    ).exists()
+    
+    return Response({'is_marked': is_marked})
