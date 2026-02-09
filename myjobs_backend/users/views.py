@@ -114,20 +114,18 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"detail": "Invalid email"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        user = authenticate(request, username=user.email, password=password)
+        # Use authenticate directly - it's more efficient than separate user lookup
+        user = authenticate(request, username=email, password=password)
 
         if user:
-            # Manually update last_login so the dashboard can show real relative time
+            # Only update last_login if authentication succeeds
             try:
                 user.last_login = timezone.now()
                 user.save(update_fields=["last_login"])
             except Exception:
+                # Don't fail login if last_login update fails
                 pass
+            
             refresh = RefreshToken.for_user(user)
             return Response({
                 "message": "Login successful",
@@ -143,7 +141,8 @@ class LoginView(APIView):
                 }
             }, status=status.HTTP_200_OK)
         else:
-            return Response({"detail": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
+            # Don't reveal whether email exists or password is wrong for security
+            return Response({"detail": "Invalid email or password"}, status=status.HTTP_401_UNAUTHORIZED)
 
 # -----------------------
 # Faculty / Recruiter profile detail views (basic)

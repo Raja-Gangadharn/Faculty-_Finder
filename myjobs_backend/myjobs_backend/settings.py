@@ -176,8 +176,26 @@ else:
             "PASSWORD": "postgres123",
             "HOST": "localhost",
             "PORT": "5432",
+            "OPTIONS": {
+                "MAX_CONNS": 20,
+                "MIN_CONNS": 5,
+            }
         }
     }
+
+# Database connection optimization for both environments
+for db_config in DATABASES.values():
+    if 'OPTIONS' not in db_config:
+        db_config['OPTIONS'] = {}
+    # Connection pooling settings
+    db_config['OPTIONS'].update({
+        'MAX_CONNS': db_config['OPTIONS'].get('MAX_CONNS', 20),
+        'MIN_CONNS': db_config['OPTIONS'].get('MIN_CONNS', 5),
+        'connect_timeout': 60,
+        'server_side_binding': True,
+    })
+    # Persistent connections for better performance
+    db_config['CONN_MAX_AGE'] = 600
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -234,3 +252,99 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Performance Optimizations
+# -------------------------
+
+# Session settings for better performance
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+
+# Simple in-memory cache for development
+if DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'faculty-finder-cache',
+        }
+    }
+else:
+    # Redis for production (uncomment when Redis is available)
+    # CACHES = {
+    #     'default': {
+    #         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+    #         'LOCATION': 'redis://127.0.0.1:6379/1',
+    #     }
+    # }
+    # Fallback to file-based cache for production without Redis
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': '/tmp/faculty-finder-cache',
+        }
+    }
+
+# JWT Settings
+# ------------
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}
+
+# Logging Configuration
+# --------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'faculty_finder.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'WARNING',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'users': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
