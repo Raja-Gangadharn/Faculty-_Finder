@@ -3,28 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Pagination, Alert, Form, Button, Spinner } from 'react-bootstrap';
 import { FaSearch, FaExclamationCircle } from 'react-icons/fa';
 import JobCard from '../../components/faculty/JobCard';
+import { jobService } from '../../services/jobService';
 import './styles/JobOpportunities.css';
 
 const normalize = (str = '') => str.toString().toLowerCase().trim();
-
-// Sample job data
-const sampleJobs = [
-  {
-    id: 1,
-    title: 'Computer Science Professor',
-    department: 'Computer Science',
-    job_type: 'Full-time',
-    location: 'New York, NY',
-    salary: '$80,000 - $100,000',
-    deadline: '2023-12-31',
-    course: 'Computer Science',
-    postedAt: '2023-10-15T10:00:00Z',
-    description: 'We are looking for an experienced Computer Science professor...',
-    requirements: 'PhD in Computer Science or related field...',
-    responsibilities: 'Teach undergraduate and graduate courses...'
-  },
-  // Add more sample jobs as needed
-];
 
 const JobOpportunities = () => {
   const navigate = useNavigate();
@@ -36,8 +18,8 @@ const JobOpportunities = () => {
   const [lastSavedJob, setLastSavedJob] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [jobs, setJobs] = useState(sampleJobs);
-  const [isLoading, setIsLoading] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const pageSize = 6;
 
@@ -58,28 +40,67 @@ const JobOpportunities = () => {
     setSavedJobs(saved);
   }, []);
 
+  // Fetch jobs from API on component mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const jobsData = await jobService.getAllJobs();
+        setJobs(jobsData);
+      } catch (err) {
+        setError(err.message || 'Failed to load jobs. Please try again.');
+        console.error('Error fetching jobs:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Check which jobs are saved
+  useEffect(() => {
+    const checkSavedJobs = async () => {
+      try {
+        const savedJobsData = await jobService.getSavedJobs();
+        const savedJobIds = savedJobsData.map(savedJob => savedJob.job_details.id);
+        setSavedJobs(savedJobIds);
+      } catch (err) {
+        console.error('Error fetching saved jobs:', err);
+      }
+    };
+
+    if (jobs.length > 0) {
+      checkSavedJobs();
+    }
+  }, [jobs]);
+
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSaveJob = (job, isSaved) => {
-    let updatedSavedJobs;
-
-    if (isSaved) {
-      updatedSavedJobs = [...savedJobs, job];
-      setLastSavedJob(job);
-      setShowSaveAlert(true);
-      setTimeout(() => setShowSaveAlert(false), 3000);
-    } else {
-      updatedSavedJobs = savedJobs.filter(savedJob => savedJob.id !== job.id);
+  const handleSaveJob = async (job, shouldSave) => {
+    try {
+      if (shouldSave) {
+        await jobService.saveJob(job.id);
+        setSavedJobs(prev => [...prev, job.id]);
+        setLastSavedJob(job);
+        setShowSaveAlert(true);
+        setTimeout(() => setShowSaveAlert(false), 3000);
+      } else {
+        await jobService.unsaveJob(job.id);
+        setSavedJobs(prev => prev.filter(jobId => jobId !== job.id));
+      }
+    } catch (err) {
+      console.error('Error saving/unsaving job:', err);
+      // Show error message to user
+      alert(err.message || 'Failed to save job. Please try again.');
     }
-
-    setSavedJobs(updatedSavedJobs);
-    localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
   };
 
-  const isJobSaved = (jobId) => savedJobs.some(job => job.id === jobId);
+  const isJobSaved = (jobId) => savedJobs.includes(jobId);
 
   const handleApply = (jobId) => {
     if (!appliedJobs.includes(jobId)) {
@@ -104,7 +125,7 @@ const JobOpportunities = () => {
     if (tokens.length) {
       filtered = filtered.filter(job => {
         if (!job) return false;
-        
+
         // Include all searchable fields
         const searchableFields = [
           job.title || '',
@@ -113,11 +134,12 @@ const JobOpportunities = () => {
           job.course || '',
           job.job_type || '',
           job.description || '',
-          job.requirements || ''
+          job.eligibility || '',
+          job.skills_required || ''
         ].map(normalize);
 
         // For each token, require it to match at least one field (AND across tokens)
-        return tokens.every(token => 
+        return tokens.every(token =>
           searchableFields.some(field => field.includes(token))
         );
       });
@@ -126,39 +148,16 @@ const JobOpportunities = () => {
     // Sorting
     const sorted = [...filtered].sort((a, b) => {
       if (!a || !b) return 0;
-      
-      // Helper to parse salary strings into numbers (handles formats like "$80k - $100k" or "80000-100000")
-      const parseSalary = (salaryStr) => {
-        if (!salaryStr) return 0;
-        // Handle ranges (take the average)
-        const range = salaryStr.split('-').map(s => {
-          // Remove non-numeric characters and convert to number
-          const num = parseFloat(s.replace(/[^0-9.]/g, ''));
-          // If the number is in thousands (e.g., 80k), convert to actual number
-          return s.toLowerCase().includes('k') ? num * 1000 : num;
-        });
-        return range.reduce((sum, num) => sum + num, 0) / range.length;
-      };
 
       switch (sortOption) {
         case 'newest':
-          return new Date(b.postedAt) - new Date(a.postedAt);
+          return new Date(b.created_at) - new Date(a.created_at);
         case 'oldest':
-          return new Date(a.postedAt) - new Date(b.postedAt);
-        case 'salary-high': {
-          const salaryA = parseSalary(a.salary);
-          const salaryB = parseSalary(b.salary);
-          return salaryB - salaryA;
-        }
-        case 'salary-low': {
-          const salaryA = parseSalary(a.salary);
-          const salaryB = parseSalary(b.salary);
-          return salaryA - salaryB;
-        }
+          return new Date(a.created_at) - new Date(b.created_at);
         case 'deadline':
           return new Date(a.deadline) - new Date(b.deadline);
         default:
-          return new Date(b.postedAt) - new Date(a.postedAt);
+          return new Date(b.created_at) - new Date(a.created_at);
       }
     });
 
@@ -233,8 +232,6 @@ const JobOpportunities = () => {
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
-                    <option value="salary-high">Salary: High to Low</option>
-                    <option value="salary-low">Salary: Low to High</option>
                     <option value="deadline">Deadline</option>
                   </Form.Select>
                 </div>

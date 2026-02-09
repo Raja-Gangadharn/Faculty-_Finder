@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Container, Row, Col, Pagination, Form, Button, Modal, Alert } from 'react-bootstrap';
-import { FaBookmark, FaRegSadTear, FaBolt, FaCheckCircle } from 'react-icons/fa';
+import { Container, Row, Col, Pagination, Form, Button, Modal, Alert, Spinner } from 'react-bootstrap';
+import { FaBookmark, FaRegSadTear, FaBolt, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import SavedJobCard from '../../components/faculty/SavedJobCard';
+import { jobService } from '../../services/jobService';
 import './styles/SavedJobs.css';
 
 const SavedJobs = () => {
@@ -11,13 +12,26 @@ const SavedJobs = () => {
   const [sortOption, setSortOption] = useState('newest');
   const [showEasyApplyModal, setShowEasyApplyModal] = useState(false);
   const [showApplySuccess, setShowApplySuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const pageSize = 6;
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
-    const applied = JSON.parse(localStorage.getItem('appliedJobs') || '{}');
-    setSavedJobs(saved);
-    setAppliedJobs(applied);
+    const fetchSavedJobs = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const savedJobsData = await jobService.getSavedJobs();
+        setSavedJobs(savedJobsData);
+      } catch (err) {
+        setError(err.message || 'Failed to load saved jobs. Please try again.');
+        console.error('Error fetching saved jobs:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSavedJobs();
   }, []);
 
   const processedJobs = useMemo(() => {
@@ -27,18 +41,18 @@ const SavedJobs = () => {
     if (sortOption === '7days') {
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
-      filteredJobs = filteredJobs.filter(job => new Date(job.postedAt) >= weekAgo);
+      filteredJobs = filteredJobs.filter(job => new Date(job.saved_at) >= weekAgo);
     } else if (sortOption === '15days') {
       const twoWeeksAgo = new Date(now);
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 15);
-      filteredJobs = filteredJobs.filter(job => new Date(job.postedAt) >= twoWeeksAgo);
+      filteredJobs = filteredJobs.filter(job => new Date(job.saved_at) >= twoWeeksAgo);
     }
 
     return filteredJobs.sort((a, b) => {
       if (sortOption === 'newest') {
-        return new Date(b.postedAt) - new Date(a.postedAt);
+        return new Date(b.saved_at) - new Date(a.saved_at);
       } else {
-        return new Date(a.postedAt) - new Date(b.postedAt);
+        return new Date(a.saved_at) - new Date(b.saved_at);
       }
     });
   }, [savedJobs, sortOption]);
@@ -79,14 +93,14 @@ const SavedJobs = () => {
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-    const recentJobs = savedJobs.filter(job => new Date(job.postedAt) >= fifteenDaysAgo);
+    const recentJobs = savedJobs.filter(job => new Date(job.saved_at) >= fifteenDaysAgo);
 
     const updatedAppliedJobs = { ...appliedJobs };
     const now = new Date().toISOString();
 
     recentJobs.forEach(job => {
-      if (!updatedAppliedJobs[job.id] || !updatedAppliedJobs[job.id].applied) {
-        updatedAppliedJobs[job.id] = {
+      if (!updatedAppliedJobs[job.job_details.id] || !updatedAppliedJobs[job.job_details.id].applied) {
+        updatedAppliedJobs[job.job_details.id] = {
           applied: true,
           method: 'easy',
           appliedAt: now
@@ -95,25 +109,55 @@ const SavedJobs = () => {
     });
 
     setAppliedJobs(updatedAppliedJobs);
-    localStorage.setItem('appliedJobs', JSON.stringify(updatedAppliedJobs));
 
     setShowEasyApplyModal(false);
     setShowApplySuccess(true);
     setTimeout(() => setShowApplySuccess(false), 3000);
   };
 
-  const removeSavedJob = (jobId) => {
-    const updatedJobs = savedJobs.filter(job => job.id !== jobId);
-    setSavedJobs(updatedJobs);
-    localStorage.setItem('savedJobs', JSON.stringify(updatedJobs));
-    // optionally also remove from appliedJobs
-    const updatedApplied = { ...appliedJobs };
-    if (updatedApplied[jobId]) {
-      delete updatedApplied[jobId];
-      setAppliedJobs(updatedApplied);
-      localStorage.setItem('appliedJobs', JSON.stringify(updatedApplied));
+  const removeSavedJob = async (savedJobId, jobDetailsId) => {
+    try {
+      await jobService.unsaveJob(jobDetailsId);
+      setSavedJobs(prev => prev.filter(job => job.id !== savedJobId));
+      // optionally also remove from appliedJobs
+      const updatedApplied = { ...appliedJobs };
+      if (updatedApplied[jobDetailsId]) {
+        delete updatedApplied[jobDetailsId];
+        setAppliedJobs(updatedApplied);
+      }
+    } catch (err) {
+      console.error('Error removing saved job:', err);
+      alert(err.message || 'Failed to remove saved job. Please try again.');
     }
   };
+
+  if (isLoading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading saved jobs...</span>
+        </Spinner>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">
+          <div className="d-flex align-items-center">
+            <FaExclamationCircle className="me-2" />
+            {error}
+          </div>
+        </Alert>
+        <div className="text-center mt-3">
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <Container className="saved-jobs-container">
@@ -173,15 +217,15 @@ const SavedJobs = () => {
             </Alert>
           ) : (
             <Row className="g-4 mb-4">
-              {currentJobs.map((job) => (
-                <Col key={job.id} xs={12} md={6} lg={4} className="mb-3">
+              {currentJobs.map((savedJob) => (
+                <Col key={savedJob.id} xs={12} md={6} lg={4} className="mb-3">
                   <SavedJobCard
-                    job={job}
-                    isApplied={appliedJobs[job.id]?.applied || false}
-                    applyMethod={appliedJobs[job.id]?.method}
-                    appliedAt={appliedJobs[job.id]?.appliedAt}
-                    onSaveToggle={(jobId) => removeSavedJob(jobId)}
-                    onApply={() => handleApply(job.id)}
+                    job={savedJob.job_details}
+                    isApplied={appliedJobs[savedJob.job_details.id]?.applied || false}
+                    applyMethod={appliedJobs[savedJob.job_details.id]?.method}
+                    appliedAt={appliedJobs[savedJob.job_details.id]?.appliedAt}
+                    onSaveToggle={(jobId) => removeSavedJob(savedJob.id, jobId)}
+                    onApply={() => handleApply(savedJob.job_details.id)}
                   />
                 </Col>
               ))}
@@ -225,7 +269,6 @@ const SavedJobs = () => {
           )}
         </>
       )}
-
       <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 1100, marginTop: '70px' }}>
         <Alert
           variant="success"
@@ -257,16 +300,16 @@ const SavedJobs = () => {
         </Modal.Header>
         <Modal.Body className="py-4">
           <div className="text-center mb-4">
-            <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+            <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '60px', height: '60px' }}>
               <FaBolt size={24} className="text-primary" />
             </div>
             <h5>Apply to Multiple Jobs</h5>
             <p className="text-muted mb-0">
-              You're about to apply to all jobs posted within the last 15 days.
+              You're about to apply to all jobs saved within the last 15 days.
               This action will submit your application to {savedJobs.filter(job => {
                 const fifteenDaysAgo = new Date();
                 fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-                return new Date(job.postedAt) >= fifteenDaysAgo;
+                return new Date(job.saved_at) >= fifteenDaysAgo;
               }).length} position(s).
             </p>
           </div>

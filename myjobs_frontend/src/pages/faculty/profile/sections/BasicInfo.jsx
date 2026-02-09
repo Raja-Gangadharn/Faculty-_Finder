@@ -158,9 +158,19 @@ const BasicInfo = forwardRef(({ isEditing }, ref) => {
 
       // Prepare the form data - don't include the file in the main payload
       // as it will be handled separately in the file upload
-      const payload = { ...dataToSave };
+      const payload = {
+        title: formData.title,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        dob: formData.dob || null,
+        gender: formData.gender,
+        state: formData.state,
+        city: formData.city,
+        linkedin: formData.linkedin,
+        workPreference: formData.workPreference
+      };
 
-      // If we have a new profile photo file, include it
       if (profilePhotoFile) {
         payload.profile_photo = profilePhotoFile;
       }

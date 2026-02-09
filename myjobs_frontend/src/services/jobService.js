@@ -1,6 +1,6 @@
 import { getToken } from './authService';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8000/api';
 
 const getAuthHeaders = () => {
   const token = getToken();
@@ -136,6 +136,20 @@ export const jobService = {
     return true;
   },
 
+  // Get all jobs (for faculty - filtered by department)
+  async getAllJobs() {
+    const response = await fetch(`${API_BASE_URL}/jobs/`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch jobs');
+    }
+
+    return response.json();
+  },
+
   // Get single job details
   async getJob(jobId) {
     const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/`, {
@@ -145,6 +159,64 @@ export const jobService = {
 
     if (!response.ok) {
       throw new Error('Failed to fetch job details');
+    }
+
+    return response.json();
+  },
+
+  // Save a job
+  async saveJob(jobId) {
+    const response = await fetch(`${API_BASE_URL}/jobs/saved/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ job: jobId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save job');
+    }
+
+    return response.json();
+  },
+
+  // Unsave a job
+  async unsaveJob(jobId) {
+    const response = await fetch(`${API_BASE_URL}/jobs/saved/${jobId}/`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to unsave job');
+    }
+
+    return response.json();
+  },
+
+  // Get all saved jobs
+  async getSavedJobs() {
+    const response = await fetch(`${API_BASE_URL}/jobs/saved/`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch saved jobs');
+    }
+
+    return response.json();
+  },
+
+  // Check if a job is saved
+  async isJobSaved(jobId) {
+    const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/is-saved/`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check if job is saved');
     }
 
     return response.json();

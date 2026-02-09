@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 import JobSelectionModal from '../../components/recruiter/JobSelectionModal';
 import recruiterService from '../../services/recruiterService';
+import { markedProfilesService } from '../../services/markedProfilesService';
 
 // Default API configuration
 const API_BASE_URL = (import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8000/api').replace(/\/+$/, ''); // Remove trailing slashes
@@ -50,6 +51,45 @@ const FacultyDetails = () => {
       setShowJobSelectModal(false);
     } catch (error) {
       console.error('Error sending invite:', error);
+    }
+  };
+
+  // Check if profile is marked
+  useEffect(() => {
+    const checkIfProfileMarked = async () => {
+      try {
+        const result = await markedProfilesService.isProfileMarked(id);
+        setIsProfileMarked(result.is_marked);
+      } catch (err) {
+        console.error('Error checking if profile is marked:', err);
+      }
+    };
+
+    if (id) {
+      checkIfProfileMarked();
+    }
+  }, [id]);
+
+  // Handle marking profile
+  const handleMarkProfile = async () => {
+    try {
+      await markedProfilesService.markProfile(id);
+      setIsProfileMarked(true);
+      setShowMarkConfirm(false);
+    } catch (err) {
+      console.error('Error marking profile:', err);
+      alert(err.message || 'Failed to mark profile. Please try again.');
+    }
+  };
+
+  // Handle unmarking profile
+  const handleUnmarkProfile = async () => {
+    try {
+      await markedProfilesService.unmarkProfile(id);
+      setIsProfileMarked(false);
+    } catch (err) {
+      console.error('Error unmarking profile:', err);
+      alert(err.message || 'Failed to unmark profile. Please try again.');
     }
   };
 
@@ -131,10 +171,9 @@ const FacultyDetails = () => {
           </Button>
           <button
             className={`btn ${isProfileMarked ? 'btn-danger' : 'btn-outline-danger'}`}
-            onClick={() => isProfileMarked ? null : setShowMarkConfirm(true)}
-            disabled={isProfileMarked}
+            onClick={() => isProfileMarked ? handleUnmarkProfile() : setShowMarkConfirm(true)}
           >
-            {isProfileMarked ? 'Profile Marked' : 'Mark Profile'}
+            {isProfileMarked ? 'Unmark Profile' : 'Mark Profile'}
           </button>
         </div>
       </div>
@@ -146,37 +185,6 @@ const FacultyDetails = () => {
         onSelect={handleJobSelect}
         recruiterId={currentUser?.id}
       />
-
-      {/* Mark Profile Confirmation Modal */}
-      {showMarkConfirm && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Confirm Mark</h5>
-                <button type="button" className="btn-close" onClick={() => setShowMarkConfirm(false)}></button>
-              </div>
-              <div className="modal-body">
-                Are you sure you want to mark this faculty profile for further action?
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowMarkConfirm(false)}>Cancel</button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={() => {
-                    setIsProfileMarked(true);
-                    setShowMarkConfirm(false);
-                    // Here you would typically make an API call to mark the profile
-                  }}
-                >
-                  Yes, Mark Profile
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Card className="shadow-sm mb-4 profile-header">
         <Card.Body className="p-4">
@@ -447,6 +455,36 @@ const FacultyDetails = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowCoursesModal(false)}>Close</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Mark Profile Confirmation Modal */}
+      <Modal show={showMarkConfirm} onHide={() => setShowMarkConfirm(false)} centered>
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title>Mark Faculty Profile</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="py-4">
+          <div className="text-center">
+            <div className="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+              <FaUserTie size={24} className="text-primary" />
+            </div>
+            <h5>Mark {basic.first_name} {basic.last_name}?</h5>
+            <p className="text-muted">
+              This faculty member will be added to your marked profiles list for easy access later.
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="light" onClick={() => setShowMarkConfirm(false)} className="px-4">
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleMarkProfile}
+            className="px-4"
+          >
+            Mark Profile
+          </Button>
         </Modal.Footer>
       </Modal>
     </Container>

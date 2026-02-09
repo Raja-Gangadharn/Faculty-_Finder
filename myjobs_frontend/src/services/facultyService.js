@@ -2,19 +2,6 @@
 import api from "./authService"; // reuse same axios instance
 
 // -------- Helpers --------
-const normalizeWorkPreference = (wp) => {
-  if (!wp) return [];
-  if (Array.isArray(wp)) return wp;
-  if (typeof wp === "string") {
-    try {
-      const parsed = JSON.parse(wp);
-      if (Array.isArray(parsed)) return parsed;
-    } catch (_) {}
-    return wp.split(",").map((s) => s.trim()).filter(Boolean);
-  }
-  return [];
-};
-
 const mapFacultyPayloadToBackend = (payload = {}) => {
   const body = {};
   if ("title" in payload) body.title = payload.title;
@@ -27,7 +14,7 @@ const mapFacultyPayloadToBackend = (payload = {}) => {
   if ("city" in payload) body.city = payload.city;
   if ("linkedin" in payload) body.linkedin = payload.linkedin;
   if ("workPreference" in payload)
-    body.work_preference = normalizeWorkPreference(payload.workPreference);
+    body.work_preference = payload.workPreference;
   return body;
 };
 
