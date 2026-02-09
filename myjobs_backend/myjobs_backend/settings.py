@@ -73,17 +73,6 @@ REST_FRAMEWORK = {
 }
 
 
-# JWT Settings
-from datetime import timedelta
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-}
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -160,8 +149,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL:
     # ✅ Render / Production
     DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
             conn_max_age=600,
             ssl_require=True
         )
@@ -176,26 +165,23 @@ else:
             "PASSWORD": "postgres123",
             "HOST": "localhost",
             "PORT": "5432",
-            "OPTIONS": {
-                "MAX_CONNS": 20,
-                "MIN_CONNS": 5,
-            }
+            "CONN_MAX_AGE": 600,   # ✅ ONLY valid optimization
         }
     }
 
 # Database connection optimization for both environments
-for db_config in DATABASES.values():
-    if 'OPTIONS' not in db_config:
-        db_config['OPTIONS'] = {}
-    # Connection pooling settings
-    db_config['OPTIONS'].update({
-        'MAX_CONNS': db_config['OPTIONS'].get('MAX_CONNS', 20),
-        'MIN_CONNS': db_config['OPTIONS'].get('MIN_CONNS', 5),
-        'connect_timeout': 60,
-        'server_side_binding': True,
-    })
-    # Persistent connections for better performance
-    db_config['CONN_MAX_AGE'] = 600
+# for db_config in DATABASES.values():
+#     if 'OPTIONS' not in db_config:
+#         db_config['OPTIONS'] = {}
+    
+#     db_config['OPTIONS'].update({
+#         'MAX_CONNS': db_config['OPTIONS'].get('MAX_CONNS', 20),
+#         'MIN_CONNS': db_config['OPTIONS'].get('MIN_CONNS', 5),
+#         'connect_timeout': 60,
+#         'server_side_binding': True,
+#     })
+  
+#     db_config['CONN_MAX_AGE'] = 600
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -240,7 +226,7 @@ ADMIN_EMAIL = 'navinas@vatechies.com'  # Admin email for notifications
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-BASE_DIR = Path(__file__).resolve().parent.parent
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
